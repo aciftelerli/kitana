@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitana V6.32 - Finansal Radar (Cari Takip)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kitanaDark: '#0B1120',
+                        kitanaAccent: '#FF0056', 
+                        kitanaGreen: '#10B981', 
+                        kitanaWarning: '#F59E0B',
+                        kitanaDanger: '#EF4444',
+                        kitanaBlue: '#3B82F6',
+                        kitanaSoft: '#F8FAFC',
+                        kitanaBorder: '#E2E8F0'
+                    },
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'card': '0 0 0 1px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.04)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F8FAFC; color: #334155; font-family: 'Poppins', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        
+        .k-tab { border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .k-tab.active { border-color: #0B1120; color: #0B1120; font-weight: 700; }
+        
+        .balance-card { transition: transform 0.2s; }
+        .balance-card:hover { transform: translateY(-3px); }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden">
+    <script>
+        if (window.self !== window.top) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var header = document.querySelector('body > header');
+                if (header) header.style.display = 'none';
+            });
+        }
+    </script>
+
+    <header class="h-16 bg-white border-b border-kitanaBorder flex items-center justify-between px-8 z-20 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-kitanaDark rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-800 text-lg">Cari Hesap Yönetimi</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tedarikçi & Veresiye Müşteri</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-xs font-bold text-slate-400 uppercase">Net Nakit Akışı</p>
+                <p class="text-xl font-black text-slate-800">-84.250 ₺</p>
+            </div>
+            <button onclick="newTransaction()" class="bg-kitanaDark text-white px-5 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-800 transition">
+                <i class="fa-solid fa-plus mr-2"></i> Yeni İşlem
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-1/4 bg-white border-r border-kitanaBorder flex flex-col z-10 overflow-y-auto">
+            
+            <div class="p-6 border-b border-kitanaBorder bg-slate-50">
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-red-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-xs font-bold text-red-400 uppercase">Tedarikçi Borçları</p>
+                        <h3 class="text-2xl font-black text-kitanaDanger mt-1">142.500 ₺</h3>
+                        <p class="text-[10px] text-slate-400 mt-1">Vadesi geçen: 12.000 ₺</p>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-xl border border-green-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 top-0 w-16 h-16 bg-green-50 rounded-bl-full -mr-2 -mt-2"></div>
+                        <p class="text-xs font-bold text-green-500 uppercase">Müşteri Alacakları</p>
+                        <h3 class="text-2xl font-black text-kitanaGreen mt-1">58.250 ₺</h3>
+                        <p class="text-[10px] text-slate-400 mt-1">Tahsilat oranı: %65</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-bell text-kitanaWarning"></i> Finansal Radar
+                </h3>
+                
+                <div class="space-y-3">
+                    <div class="p-3 bg-red-50 border-l-4 border-kitanaDanger rounded-r-lg shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-slate-800 text-sm">Kasap Ahmet</h4>
+                            <span class="text-[10px] bg-red-200 text-red-800 px-1.5 rounded font-bold">Bugün</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">Fatura vadesi doldu.</p>
+                        <p class="text-sm font-black text-kitanaDanger mt-1">12.400 ₺</p>
+                        <button class="mt-2 w-full py-1 bg-white border border-red-200 text-red-600 text-xs font-bold rounded hover:bg-red-600 hover:text-white transition">Ödeme Gir</button>
+                    </div>
+
+                    <div class="p-3 bg-orange-50 border-l-4 border-orange-500 rounded-r-lg shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-slate-800 text-sm">Mert Yılmaz (VIP)</h4>
+                            <span class="text-[10px] bg-orange-200 text-orange-800 px-1.5 rounded font-bold">Limit Doldu</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">Veresiye limiti (5.000₺) aşıldı.</p>
+                        <div class="flex gap-2 mt-2">
+                            <button onclick="sendWhatsapp('Mert Yılmaz', 5200)" class="flex-1 py-1 bg-green-500 text-white text-xs font-bold rounded hover:bg-green-600"><i class="fa-brands fa-whatsapp"></i> Uyar</button>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg shadow-sm opacity-75">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-bold text-slate-800 text-sm">Metro Gross</h4>
+                            <span class="text-[10px] bg-blue-200 text-blue-800 px-1.5 rounded font-bold">3 Gün Var</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mt-1">Haftalık ödeme planı.</p>
+                        <p class="text-sm font-black text-blue-600 mt-1">8.500 ₺</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 bg-kitanaSoft p-8 overflow-y-auto">
+            
+            <div class="max-w-6xl mx-auto">
+                
+                <div class="flex border-b border-kitanaBorder mb-6">
+                    <button onclick="switchTab('suppliers')" id="tab-suppliers" class="k-tab active px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-truck-field"></i> Tedarikçiler (Borçlar)
+                    </button>
+                    <button onclick="switchTab('customers')" id="tab-customers" class="k-tab px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-users"></i> Müşteriler (Alacaklar)
+                    </button>
+                </div>
+
+                <div id="view-suppliers" class="animate-fade-in block">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        
+                        <div class="bg-white p-6 rounded-2xl shadow-card balance-card cursor-pointer border border-kitanaBorder group" onclick="openStatement('Etçi Mehmet Ltd.', -45200, 'supplier')">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xl font-bold">EM</div>
+                                <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold">Gecikmiş</span>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-800 group-hover:text-kitanaAccent">Etçi Mehmet Ltd.</h3>
+                            <p class="text-xs text-slate-400">Son İşlem: Dün</p>
+                            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-end">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Güncel Bakiye</p>
+                                    <p class="text-2xl font-black text-kitanaDanger">45.200 ₺</p>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-2xl shadow-card balance-card cursor-pointer border border-kitanaBorder group" onclick="openStatement('Hal Dünyası', -12500, 'supplier')">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="w-12 h-12 rounded-full bg-orange-50 text-orange-500 flex items-center justify-center text-xl font-bold">HD</div>
+                                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-[10px] font-bold">Güvenli</span>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-800 group-hover:text-kitanaAccent">Hal Dünyası</h3>
+                            <p class="text-xs text-slate-400">Son İşlem: 3 gün önce</p>
+                            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-end">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Güncel Bakiye</p>
+                                    <p class="text-2xl font-black text-slate-700">12.500 ₺</p>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="view-customers" class="animate-fade-in hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        
+                        <div class="bg-white p-6 rounded-2xl shadow-card balance-card cursor-pointer border border-kitanaBorder group" onclick="openStatement('Ahmet Yılmaz', 5200, 'customer')">
+                            <div class="flex justify-between items-start mb-4">
+                                <img src="https://i.pravatar.cc/150?img=68" class="w-12 h-12 rounded-full border-2 border-white shadow-sm">
+                                <div class="flex gap-2">
+                                    <button onclick="event.stopPropagation(); sendWhatsapp('Ahmet Yılmaz', 5200)" class="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-500 hover:text-white transition"><i class="fa-brands fa-whatsapp"></i></button>
+                                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-[10px] font-bold h-fit">Limit Dolu</span>
+                                </div>
+                            </div>
+                            <h3 class="font-bold text-lg text-slate-800 group-hover:text-kitanaAccent">Ahmet Yılmaz</h3>
+                            <p class="text-xs text-slate-400">VIP Müşteri • Limit: 5.000 ₺</p>
+                            <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-end">
+                                <div>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Alacak</p>
+                                    <p class="text-2xl font-black text-kitanaGreen">5.200 ₺</p>
+                                </div>
+                                <button class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 text-slate-600"><i class="fa-solid fa-chevron-right"></i></button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+    </main>
+
+    <div id="statementModal" class="fixed inset-0 z-50 bg-slate-900/80 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-[800px] h-[600px] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            
+            <div class="h-20 bg-slate-50 border-b border-slate-200 flex justify-between items-center px-8">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800" id="modalTitle">Etçi Mehmet Ltd.</h2>
+                    <p class="text-xs text-slate-500 font-bold" id="modalSubtitle">Tedarikçi Hesabı</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Güncel Bakiye</p>
+                    <p class="text-3xl font-black text-kitanaDanger" id="modalBalance">-45.200 ₺</p>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-8">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-white text-slate-400 uppercase text-xs font-bold border-b-2 border-slate-100 sticky top-0">
+                        <tr>
+                            <th class="pb-3">Tarih</th>
+                            <th class="pb-3">Açıklama</th>
+                            <th class="pb-3 text-right">Borç (Çıkan)</th>
+                            <th class="pb-3 text-right">Alacak (Giren)</th>
+                            <th class="pb-3 text-right">Bakiye</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 font-medium text-slate-600">
+                        <tr>
+                            <td class="py-3">28.01.2026</td>
+                            <td class="py-3">Fatura #INV-992 (Kıyma)</td>
+                            <td class="py-3 text-right text-red-500">-12.400 ₺</td>
+                            <td class="py-3 text-right">-</td>
+                            <td class="py-3 text-right font-bold">-45.200 ₺</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3">25.01.2026</td>
+                            <td class="py-3">Nakit Ödeme (Tahsilat Makbuzu)</td>
+                            <td class="py-3 text-right">-</td>
+                            <td class="py-3 text-right text-green-600">+5.000 ₺</td>
+                            <td class="py-3 text-right font-bold">-32.800 ₺</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3">15.01.2026</td>
+                            <td class="py-3">Fatura #INV-885 (Kuzu)</td>
+                            <td class="py-3 text-right text-red-500">-37.800 ₺</td>
+                            <td class="py-3 text-right">-</td>
+                            <td class="py-3 text-right font-bold">-37.800 ₺</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-6 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
+                <button class="text-slate-500 hover:text-slate-800 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-print"></i> Ekstre Yazdır</button>
+                <div class="flex gap-3">
+                    <button onclick="closeModal()" class="px-6 py-2 border border-slate-300 rounded-lg text-slate-600 font-bold hover:bg-white">Kapat</button>
+                    <button onclick="alert('Ödeme/Tahsilat Ekranı')" class="px-6 py-2 bg-kitanaDark text-white rounded-lg font-bold hover:bg-slate-800 shadow-lg"><i class="fa-solid fa-money-bill-transfer mr-2"></i> Ödeme / Tahsilat Gir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            // UI Toggle
+            document.querySelectorAll('.k-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            document.getElementById('view-suppliers').classList.add('hidden');
+            document.getElementById('view-customers').classList.add('hidden');
+            
+            const target = document.getElementById('view-' + tab);
+            target.classList.remove('hidden');
+            target.classList.add('animate-fade-in');
+        }
+
+        function openStatement(title, balance, type) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalSubtitle').innerText = type === 'supplier' ? 'Tedarikçi Ekstresi' : 'Müşteri Ekstresi';
+            
+            const balEl = document.getElementById('modalBalance');
+            balEl.innerText = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(balance);
+            
+            if(balance < 0) balEl.className = "text-3xl font-black text-kitanaDanger";
+            else balEl.className = "text-3xl font-black text-kitanaGreen";
+
+            document.getElementById('statementModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('statementModal').classList.add('hidden');
+        }
+
+        function sendWhatsapp(name, debt) {
+            Swal.fire({
+                title: 'WhatsApp Mesajı Gönder',
+                text: `Sayın ${name}, ${debt} TL bakiyeniz bulunmaktadır. Ödemenizi rica ederiz.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#25D366',
+                confirmButtonText: '<i class="fa-brands fa-whatsapp"></i> Gönder',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Gönderildi!', 'Hatırlatma mesajı iletildi.', 'success');
+                }
+            });
+        }
+
+        function newTransaction() {
+            Swal.fire({
+                title: 'Hızlı İşlem',
+                input: 'select',
+                inputOptions: {
+                    'payment': 'Tedarikçiye Ödeme Yap',
+                    'collection': 'Müşteriden Tahsilat Al',
+                    'debt': 'Veresiye Satış Ekle'
+                },
+                inputPlaceholder: 'İşlem Seçiniz...',
+                showCancelButton: true,
+                confirmButtonColor: '#0B1120'
+            });
+        }
+    </script>
+</body>
+</html>

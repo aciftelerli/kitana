@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitana V6.27 - Finansal Kokpit (Z-Raporu)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kitanaDark: '#0B1120',
+                        kitanaPanel: '#1E293B',
+                        kitanaAccent: '#FF0056', 
+                        kitanaGreen: '#10B981', 
+                        kitanaBlue: '#3B82F6',
+                        kitanaWarning: '#F59E0B',
+                        kitanaDanger: '#EF4444',
+                        kitanaSoft: '#F8FAFC',
+                        kitanaBorder: '#E2E8F0'
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F8FAFC; color: #334155; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        
+        .k-card { background: white; border: 1px solid #E2E8F0; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02); transition: transform 0.2s; }
+        .k-card:hover { border-color: #CBD5E1; }
+        
+        .stat-value { font-family: 'Poppins', monospace; letter-spacing: -0.5px; }
+        
+        /* Receipt Look for Modal */
+        .receipt-paper {
+            background-color: #fff;
+            background-image: radial-gradient(#eee 1px, transparent 0);
+            background-size: 10px 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden">
+    <script>
+        if (window.self !== window.top) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var header = document.querySelector('body > header');
+                if (header) header.style.display = 'none';
+            });
+        }
+    </script>
+
+    <header class="h-16 bg-white border-b border-kitanaBorder flex items-center justify-between px-8 z-20 flex-shrink-0">
+        <div class="flex items-center gap-4">
+            <div class="w-10 h-10 bg-kitanaDark rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">K</div>
+            <div>
+                <h1 class="font-bold text-slate-800 text-lg">Finansal Kokpit</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Z-Raporu & Gün Sonu Kapanışı</p>
+            </div>
+        </div>
+        
+        <div class="flex bg-slate-100 p-1 rounded-lg">
+            <button onclick="filterData('daily')" id="btn-daily" class="px-4 py-1.5 rounded-md text-xs font-bold bg-white text-kitanaDark shadow-sm transition">Günlük</button>
+            <button onclick="filterData('weekly')" id="btn-weekly" class="px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-kitanaDark transition">Haftalık</button>
+            <button onclick="filterData('monthly')" id="btn-monthly" class="px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-kitanaDark transition">Aylık</button>
+        </div>
+
+        <button onclick="openZModal()" class="bg-kitanaDanger hover:bg-red-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-red-200 flex items-center transition transform active:scale-95">
+            <i class="fa-solid fa-power-off mr-2"></i> GÜNÜ KAPAT (Z)
+        </button>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-8 relative">
+        <div class="max-w-7xl mx-auto space-y-6">
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="k-card p-6 bg-gradient-to-br from-kitanaDark to-slate-900 text-white border-none relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-kitanaGreen opacity-10 rounded-full blur-3xl -mr-6 -mt-6"></div>
+                    <div class="flex justify-between items-start relative z-10">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Net Kar (Tahmini)</p>
+                            <h2 class="text-4xl font-black mt-2 text-kitanaGreen stat-value" id="disp-netProfit">12.450 ₺</h2>
+                        </div>
+                        <div class="bg-white/10 p-3 rounded-xl"><i class="fa-solid fa-scale-balanced text-2xl text-kitanaGreen"></i></div>
+                    </div>
+                    <div class="mt-6 flex gap-4 text-xs text-slate-300 relative z-10">
+                        <div>
+                            <span class="block text-slate-500 font-bold uppercase text-[9px]">Toplam Ciro</span>
+                            <span class="font-bold text-lg text-white" id="disp-revenue">42.500 ₺</span>
+                        </div>
+                        <div class="w-px h-8 bg-slate-700"></div>
+                        <div>
+                            <span class="block text-slate-500 font-bold uppercase text-[9px]">Toplam Gider</span>
+                            <span class="font-bold text-lg text-red-400" id="disp-expense">-30.050 ₺</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="k-card p-6 col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700">Gider Dağılımı & OpEx Analizi</h3>
+                        <span class="text-xs font-bold bg-blue-50 text-blue-600 px-3 py-1 rounded-full border border-blue-100">OpEx Oranı: %<span id="opex-rate">32</span></span>
+                    </div>
+                    
+                    <div class="grid grid-cols-4 gap-4 text-center">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Ham Madde (COGS)</p>
+                            <p class="text-lg font-black text-slate-800" id="cost-cogs">12.500 ₺</p>
+                            <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden"><div class="bg-slate-600 h-full" style="width: 30%"></div></div>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
+                            <p class="text-[10px] text-blue-400 font-bold uppercase">Personel</p>
+                            <p class="text-lg font-black text-blue-700" id="cost-labor">8.400 ₺</p>
+                            <div class="w-full bg-blue-200 h-1 mt-2 rounded-full overflow-hidden"><div class="bg-blue-600 h-full" style="width: 25%"></div></div>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded-xl border border-purple-100">
+                            <p class="text-[10px] text-purple-400 font-bold uppercase">Kira & Enerji</p>
+                            <p class="text-lg font-black text-purple-700" id="cost-fixed">6.200 ₺</p>
+                            <div class="w-full bg-purple-200 h-1 mt-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full" style="width: 15%"></div></div>
+                        </div>
+                        <div class="p-3 bg-red-50 rounded-xl border border-red-100">
+                            <p class="text-[10px] text-red-400 font-bold uppercase">Zayi & İkram</p>
+                            <p class="text-lg font-black text-red-600" id="cost-waste">2.950 ₺</p>
+                            <div class="w-full bg-red-200 h-1 mt-2 rounded-full overflow-hidden"><div class="bg-red-600 h-full" style="width: 10%"></div></div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-3 text-center italic">* Bu veriler, reçete maliyet hesaplamasında "İşletme Gider Payı" olarak kullanılır.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                
+                <div class="k-card p-6">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase">Kasa Detayı</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center"><i class="fa-solid fa-money-bill"></i></div>
+                                <span class="text-sm font-bold text-slate-600">Nakit</span>
+                            </div>
+                            <span class="font-bold text-slate-800" id="pay-cash">8.200 ₺</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><i class="fa-solid fa-credit-card"></i></div>
+                                <span class="text-sm font-bold text-slate-600">Kredi Kartı</span>
+                            </div>
+                            <span class="font-bold text-slate-800" id="pay-card">24.500 ₺</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-motorcycle"></i></div>
+                                <span class="text-sm font-bold text-slate-600">Online (YS/Getir)</span>
+                            </div>
+                            <span class="font-bold text-slate-800" id="pay-online">9.800 ₺</span>
+                        </div>
+                        <div class="border-t pt-3 flex justify-between items-center">
+                            <span class="text-xs font-bold text-slate-400">AÇIK HESAP (Cari)</span>
+                            <span class="font-bold text-red-500">1.250 ₺</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="k-card p-6">
+                    <h3 class="font-bold text-slate-700 mb-2 text-sm uppercase">Zayi & Kayıp Analizi</h3>
+                    <div id="wasteChart" class="h-40 w-full -ml-2"></div>
+                    <div class="mt-2 text-center">
+                        <p class="text-xs text-slate-500">En çok zayi olan ürün:</p>
+                        <p class="font-bold text-red-500 text-sm">Domates (%12 Çürüme)</p>
+                    </div>
+                </div>
+
+                <div class="k-card p-6 col-span-2">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-slate-700 text-sm uppercase">Ciro vs. Maliyet Trendi</h3>
+                        <div class="flex items-center gap-2 text-xs font-bold">
+                            <span class="text-kitanaGreen">● Ciro</span>
+                            <span class="text-kitanaDanger">● Gider</span>
+                        </div>
+                    </div>
+                    <div id="trendChart" class="h-48 w-full"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="k-card overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-700 text-sm">Kategori Bazlı Satış</h3>
+                        <button class="text-xs text-kitanaBlue font-bold hover:underline">Detay</button>
+                    </div>
+                    <table class="w-full text-left text-sm">
+                        <thead class="text-xs text-slate-400 uppercase bg-white border-b border-slate-100">
+                            <tr><th class="p-3 pl-4">Kategori</th><th class="p-3 text-right">Adet</th><th class="p-3 text-right">Ciro</th><th class="p-3 text-right">Maliyet %</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr><td class="p-3 pl-4 font-bold">Burgerler</td><td class="p-3 text-right">142</td><td class="p-3 text-right font-bold">28.400 ₺</td><td class="p-3 text-right text-green-600">%28</td></tr>
+                            <tr><td class="p-3 pl-4 font-bold">İçecekler</td><td class="p-3 text-right">210</td><td class="p-3 text-right font-bold">8.400 ₺</td><td class="p-3 text-right text-green-600">%18</td></tr>
+                            <tr><td class="p-3 pl-4 font-bold">Yan Ürünler</td><td class="p-3 text-right">85</td><td class="p-3 text-right font-bold">4.250 ₺</td><td class="p-3 text-right text-orange-500">%35</td></tr>
+                            <tr><td class="p-3 pl-4 font-bold">Tatlılar</td><td class="p-3 text-right">45</td><td class="p-3 text-right font-bold">1.450 ₺</td><td class="p-3 text-right text-red-500">%42</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="k-card p-6">
+                    <h3 class="font-bold text-slate-700 text-sm uppercase mb-4">Sabit Gider Girişi (Aylık Tahmin)</h3>
+                    <p class="text-xs text-slate-400 mb-4">Bu veriler reçete maliyetlerinde "Operasyonel Yük" hesaplamasında kullanılır.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Kira Gideri</label>
+                            <input type="number" value="45000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:border-kitanaBlue focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Elektrik / Su / Gaz</label>
+                            <input type="number" value="18500" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:border-kitanaBlue focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Personel Maaş</label>
+                            <input type="number" value="120000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:border-kitanaBlue focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Pazarlama / Diğer</label>
+                            <input type="number" value="5000" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:border-kitanaBlue focus:outline-none">
+                        </div>
+                    </div>
+                    <button class="w-full mt-4 bg-slate-800 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition">Giderleri Güncelle & Hesapla</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="zModal" class="fixed inset-0 z-50 bg-slate-900/80 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-[400px] max-h-[80vh] overflow-y-auto rounded-lg shadow-2xl relative receipt-paper p-6 text-slate-800">
+            <button onclick="closeZModal()" class="absolute top-2 right-2 text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+
+            <div class="text-center border-b-2 border-dashed border-slate-300 pb-4 mb-4">
+                <h2 class="text-xl font-bold uppercase">KITANA RESTAURANT</h2>
+                <p class="text-xs">Alsancak Şubesi</p>
+                <p class="text-xs mt-2 font-bold">GÜN SONU Z RAPORU</p>
+                <p class="text-[10px]" id="z-date">28.01.2026 - 23:45</p>
+                <p class="text-[10px]">Rapor No: Z-00245</p>
+            </div>
+
+            <div class="space-y-1 text-sm border-b-2 border-dashed border-slate-300 pb-4 mb-4">
+                <div class="flex justify-between font-bold"><span class="uppercase">Toplam Ciro</span><span>42.500,00 ₺</span></div>
+                <div class="flex justify-between text-xs"><span class="uppercase">KDV (%1)</span><span>380,00 ₺</span></div>
+                <div class="flex justify-between text-xs"><span class="uppercase">KDV (%10)</span><span>450,00 ₺</span></div>
+                <div class="flex justify-between text-xs"><span class="uppercase">KDV (%20)</span><span>1.200,00 ₺</span></div>
+            </div>
+
+            <div class="space-y-1 text-xs border-b-2 border-dashed border-slate-300 pb-4 mb-4">
+                <p class="font-bold uppercase mb-1">Ödeme Detayı</p>
+                <div class="flex justify-between"><span>NAKİT</span><span>8.200,00 ₺</span></div>
+                <div class="flex justify-between"><span>KREDİ KARTI</span><span>24.500,00 ₺</span></div>
+                <div class="flex justify-between"><span>YEMEK KARTI</span><span>9.800,00 ₺</span></div>
+            </div>
+
+            <div class="space-y-1 text-xs border-b-2 border-dashed border-slate-300 pb-4 mb-4">
+                <p class="font-bold uppercase mb-1">İstatistkler</p>
+                <div class="flex justify-between"><span>Adisyon Sayısı</span><span>142</span></div>
+                <div class="flex justify-between"><span>Kişi Sayısı</span><span>380</span></div>
+                <div class="flex justify-between"><span>Ort. Sepet</span><span>299,00 ₺</span></div>
+                <div class="flex justify-between"><span>İptal / İade</span><span>1.250,00 ₺</span></div>
+                <div class="flex justify-between text-red-600 font-bold"><span>Zayi Tutarı</span><span>450,00 ₺</span></div>
+            </div>
+
+            <div class="text-center text-[10px] uppercase font-bold text-slate-400">
+                <p>Mali Hafıza Kaydedildi</p>
+                <p># END OF REPORT #</p>
+            </div>
+
+            <button onclick="printZ()" class="w-full mt-6 bg-slate-900 text-white py-3 rounded font-bold text-sm hover:bg-black transition">YAZDIR VE GÜNÜ KAPAT</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA SIMULATION ---
+        const dailyData = {
+            rev: 42500, exp: 30050, 
+            cogs: 12500, labor: 8400, fixed: 6200, waste: 2950,
+            cash: 8200, card: 24500, online: 9800
+        };
+        const weeklyData = {
+            rev: 285000, exp: 195000, 
+            cogs: 85000, labor: 58000, fixed: 42000, waste: 10000,
+            cash: 60000, card: 150000, online: 75000
+        };
+        const monthlyData = {
+            rev: 1250000, exp: 890000, 
+            cogs: 380000, labor: 240000, fixed: 180000, waste: 90000,
+            cash: 250000, card: 700000, online: 300000
+        };
+
+        // --- CHARTS INSTANCES ---
+        let trendChart, wasteChart;
+
+        // --- FILTER LOGIC ---
+        function filterData(type) {
+            // Update Buttons
+            ['daily', 'weekly', 'monthly'].forEach(t => {
+                const btn = document.getElementById('btn-'+t);
+                if(t === type) {
+                    btn.className = "px-4 py-1.5 rounded-md text-xs font-bold bg-white text-kitanaDark shadow-sm transition";
+                } else {
+                    btn.className = "px-4 py-1.5 rounded-md text-xs font-bold text-slate-500 hover:text-kitanaDark transition";
+                }
+            });
+
+            // Select Data Source
+            const data = type === 'daily' ? dailyData : type === 'weekly' ? weeklyData : monthlyData;
+
+            // Update DOM Elements with Animation effect (simple text swap here)
+            updateValue('disp-revenue', data.rev);
+            updateValue('disp-expense', -data.exp);
+            updateValue('disp-netProfit', data.rev - data.exp);
+            
+            updateValue('cost-cogs', data.cogs);
+            updateValue('cost-labor', data.labor);
+            updateValue('cost-fixed', data.fixed);
+            updateValue('cost-waste', data.waste);
+
+            updateValue('pay-cash', data.cash);
+            updateValue('pay-card', data.card);
+            updateValue('pay-online', data.online);
+
+            // Calc OpEx Rate: (Labor + Fixed) / Revenue
+            const opex = ((data.labor + data.fixed) / data.rev) * 100;
+            document.getElementById('opex-rate').innerText = opex.toFixed(1);
+
+            // Update Charts
+            updateCharts(type);
+        }
+
+        function updateValue(id, val) {
+            document.getElementById(id).innerText = new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(val);
+        }
+
+        // --- CHARTS LOGIC ---
+        function initCharts() {
+            // 1. Trend Chart (Revenue vs Expense)
+            var trendOptions = {
+                series: [
+                    { name: 'Ciro', data: [30, 40, 35, 50, 49, 60, 70] },
+                    { name: 'Gider', data: [20, 25, 22, 30, 28, 35, 40] }
+                ],
+                chart: { type: 'area', height: 180, toolbar: { show: false }, fontFamily: 'Poppins' },
+                colors: ['#10B981', '#EF4444'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+                xaxis: { categories: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] },
+                grid: { borderColor: '#F1F5F9', strokeDashArray: 4 }
+            };
+            trendChart = new ApexCharts(document.querySelector("#trendChart"), trendOptions);
+            trendChart.render();
+
+            // 2. Waste Breakdown (Donut)
+            var wasteOptions = {
+                series: [45, 25, 15, 15], // Üretim, SKT, İade, Dökülme
+                labels: ['Üretim H.', 'SKT Doldu', 'Müşteri İade', 'Dökülme/Kırılma'],
+                chart: { type: 'donut', height: 160, fontFamily: 'Poppins' },
+                colors: ['#EF4444', '#F59E0B', '#3B82F6', '#64748B'],
+                legend: { show: false },
+                dataLabels: { enabled: false },
+                plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Toplam', fontSize: '10px', fontWeight: 'bold', color: '#64748B' } } } } }
+            };
+            wasteChart = new ApexCharts(document.querySelector("#wasteChart"), wasteOptions);
+            wasteChart.render();
+        }
+
+        function updateCharts(type) {
+            // Simulator for changing data on filter click
+            const factor = type === 'daily' ? 1 : type === 'weekly' ? 5 : 20;
+            trendChart.updateSeries([
+                { data: [30*factor, 40*factor, 35*factor, 50*factor, 49*factor, 60*factor, 70*factor] },
+                { data: [20*factor, 25*factor, 22*factor, 30*factor, 28*factor, 35*factor, 40*factor] }
+            ]);
+        }
+
+        // --- Z REPORT MODAL ---
+        function openZModal() {
+            // Set current date
+            const now = new Date();
+            document.getElementById('z-date').innerText = now.toLocaleDateString() + ' - ' + now.toLocaleTimeString();
+            document.getElementById('zModal').classList.remove('hidden');
+        }
+        function closeZModal() {
+            document.getElementById('zModal').classList.add('hidden');
+        }
+        function printZ() {
+            window.print();
+            // Logic to clear daily sales and archive report would go here
+            closeZModal();
+        }
+
+        // INIT
+        window.onload = function() {
+            initCharts();
+            filterData('daily');
+        };
+    </script>
+</body>
+</html>

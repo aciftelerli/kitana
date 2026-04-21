@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitana V6.31 - Dinamik Fiyatlandırma</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kitanaDark: '#0B1120',
+                        kitanaAccent: '#FF0056', 
+                        kitanaGreen: '#10B981', 
+                        kitanaWarning: '#F59E0B',
+                        kitanaDanger: '#EF4444',
+                        kitanaPurple: '#8B5CF6',
+                        kitanaSoft: '#F8FAFC',
+                        kitanaBorder: '#E2E8F0'
+                    },
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F8FAFC; color: #334155; font-family: 'Poppins', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+        
+        .price-card { transition: all 0.2s; border: 1px solid transparent; }
+        .price-card:hover { border-color: #FF0056; transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+        
+        .trend-up { color: #EF4444; }
+        .trend-down { color: #10B981; }
+        .trend-stable { color: #94A3B8; }
+    </style>
+</head>
+<body class="h-screen flex flex-col font-sans overflow-hidden">
+    <script>
+        if (window.self !== window.top) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var header = document.querySelector('body > header');
+                if (header) header.style.display = 'none';
+            });
+        }
+    </script>
+
+    <header class="h-16 bg-white border-b border-kitanaBorder flex items-center justify-between px-8 z-20 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-kitanaDark rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                <i class="fa-solid fa-tags"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-slate-800 text-lg">Dinamik Fiyatlandırma Motoru</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Enflasyon Takibi & Akıllı Öneriler</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-xs font-bold text-slate-400 uppercase">Mutfak Enflasyonu (Yıllık)</p>
+                <p class="text-xl font-black text-kitanaDanger flex items-center justify-end gap-1">
+                    <i class="fa-solid fa-arrow-trend-up text-sm"></i> %68.4
+                </p>
+            </div>
+            <button class="bg-kitanaDark text-white px-5 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-800 transition">
+                <i class="fa-solid fa-check-double mr-2"></i> Tümünü Uygula
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <aside class="w-4/12 bg-white border-r border-kitanaBorder flex flex-col z-10 overflow-y-auto">
+            
+            <div class="p-6 border-b border-kitanaBorder">
+                <h3 class="font-bold text-slate-700 mb-4">Genel Satın Alma Trendi</h3>
+                <div id="inflationChart" class="w-full h-48"></div>
+                <div class="mt-4 p-3 bg-red-50 rounded-xl border border-red-100 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-bell"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">Kümülatif Maliyet Artışı</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Son 30 günde süt ürünleri ve et grubundaki zamlar genel maliyetinizi <span class="font-bold text-red-600">%12 artırdı</span>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <h3 class="font-bold text-slate-700 mb-4 text-sm uppercase">Kategori Bazlı Etki</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-slate-600">Süt Ürünleri</span>
+                            <span class="text-kitanaDanger">+%24 Artış</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-kitanaDanger h-2 rounded-full" style="width: 85%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-slate-600">Kırmızı Et</span>
+                            <span class="text-kitanaDanger">+%18 Artış</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-kitanaDanger h-2 rounded-full" style="width: 65%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-slate-600">İçecekler</span>
+                            <span class="text-kitanaWarning">+%8 Artış</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-kitanaWarning h-2 rounded-full" style="width: 30%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-slate-600">Kuru Gıda</span>
+                            <span class="text-kitanaGreen">+%2 Artış</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-kitanaGreen h-2 rounded-full" style="width: 10%"></div></div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="flex-1 bg-kitanaSoft p-8 overflow-y-auto relative">
+            
+            <div class="max-w-5xl mx-auto">
+                <h2 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                    <span class="w-2 h-6 bg-kitanaAccent rounded"></span> Aksiyon Gerektiren Ürünler
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="price-card bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 bg-kitanaDanger text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg">ZARAR YAZIYOR</div>
+                        
+                        <div class="flex gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-3xl">🍕</div>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-slate-800">Şarküteri Pizza</h3>
+                                <div class="flex items-center gap-4 text-xs mt-1 text-slate-500">
+                                    <span>Mevcut Fiyat: <strong class="text-slate-700">220 ₺</strong></span>
+                                    <span>Yeni Maliyet: <strong class="text-kitanaDanger">145 ₺</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 bg-red-50 p-3 rounded-xl border border-red-100 text-xs text-red-800">
+                            <p class="font-bold flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> Neden?</p>
+                            <p class="mt-1">Mozzarella (+%30) ve Sucuk (+%25) zamlandı. Food Cost <strong>%66</strong> seviyesine çıktı (Hedef: %32).</p>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">AI Önerisi</p>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl font-black text-kitanaDark">295 ₺</p>
+                                    <p class="text-[10px] text-green-600 font-bold">%34 Zam Öneriliyor</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Göz Ardı Et</button>
+                                    <button onclick="applyPrice('Şarküteri Pizza', 295)" class="px-4 py-2 bg-kitanaDanger text-white rounded-lg text-xs font-bold hover:bg-red-700 shadow-md animate-float">Uygula</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="price-card bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-kitanaWarning text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg">KAR DÜŞÜYOR</div>
+                        
+                        <div class="flex gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-3xl">🍔</div>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-slate-800">Truffle Burger</h3>
+                                <div class="flex items-center gap-4 text-xs mt-1 text-slate-500">
+                                    <span>Mevcut Fiyat: <strong class="text-slate-700">280 ₺</strong></span>
+                                    <span>Yeni Maliyet: <strong class="text-orange-500">95 ₺</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 bg-orange-50 p-3 rounded-xl border border-orange-100 text-xs text-orange-800">
+                            <p class="font-bold flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> Neden?</p>
+                            <p class="mt-1">Kıyma ve Mantar fiyatları arttı. Kar marjı %66'dan <strong>%55'e</strong> geriledi.</p>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">AI Önerisi</p>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl font-black text-kitanaDark">310 ₺</p>
+                                    <p class="text-[10px] text-orange-600 font-bold">%10 Zam Öneriliyor</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Göz Ardı Et</button>
+                                    <button onclick="applyPrice('Truffle Burger', 310)" class="px-4 py-2 bg-kitanaDark text-white rounded-lg text-xs font-bold hover:bg-slate-800 shadow-md">Uygula</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="price-card bg-white p-6 rounded-2xl shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 bg-kitanaPurple text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-lg">FIRSAT</div>
+                        
+                        <div class="flex gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-3xl">☕</div>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-lg text-slate-800">Latte</h3>
+                                <div class="flex items-center gap-4 text-xs mt-1 text-slate-500">
+                                    <span>Mevcut Fiyat: <strong class="text-slate-700">65 ₺</strong></span>
+                                    <span>Piyasa Ort.: <strong class="text-kitanaPurple">85 ₺</strong></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 bg-purple-50 p-3 rounded-xl border border-purple-100 text-xs text-purple-800">
+                            <p class="font-bold flex items-center gap-2"><i class="fa-solid fa-rocket"></i> Potansiyel</p>
+                            <p class="mt-1">Rakip analizi ve bölge ortalamasına göre fiyatınız düşük kaldı. Süt maliyeti stabil.</p>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-slate-100">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase mb-2">AI Önerisi</p>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-2xl font-black text-kitanaDark">75 ₺</p>
+                                    <p class="text-[10px] text-purple-600 font-bold">Güvenli Artış Aralığı</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button class="px-4 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">Göz Ardı Et</button>
+                                    <button onclick="applyPrice('Latte', 75)" class="px-4 py-2 bg-kitanaPurple text-white rounded-lg text-xs font-bold hover:bg-purple-700 shadow-md">Uygula</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="mt-8 bg-white p-6 rounded-2xl shadow-card border border-kitanaBorder">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i> Manuel Toplu Güncelleme
+                    </h3>
+                    <div class="flex gap-4 items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Kategori Seç</label>
+                            <select class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold">
+                                <option>Tüm Menü</option>
+                                <option>Sadece Burgerler</option>
+                                <option>Sadece İçecekler</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Artış Oranı (%)</label>
+                            <input type="number" placeholder="Örn: 10" class="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold">
+                        </div>
+                        <button onclick="Swal.fire('İşlem Başarılı', 'Toplu fiyat güncellemesi kuyruğa alındı.', 'success')" class="bg-slate-800 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-slate-900 transition shadow-lg">
+                            Hesapla & Uygula
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+    </main>
+
+    <script>
+        // --- CHARTS ---
+        window.onload = function() {
+            var options = {
+                series: [{
+                    name: 'Maliyet Endeksi',
+                    data: [100, 102, 105, 108, 115, 122, 130, 142]
+                }, {
+                    name: 'Menü Fiyat Endeksi',
+                    data: [100, 100, 100, 110, 110, 110, 110, 110]
+                }],
+                chart: { type: 'area', height: 200, toolbar: { show: false }, fontFamily: 'Poppins' },
+                colors: ['#EF4444', '#3B82F6'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+                xaxis: { categories: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu'] },
+                legend: { position: 'top', horizontalAlign: 'right' },
+                grid: { borderColor: '#F1F5F9' }
+            };
+            var chart = new ApexCharts(document.querySelector("#inflationChart"), options);
+            chart.render();
+        };
+
+        // --- ACTIONS ---
+        function applyPrice(item, price) {
+            Swal.fire({
+                title: 'Fiyatı Güncelle?',
+                html: `<strong>${item}</strong> fiyatı <strong>${price} ₺</strong> olarak güncellenecek ve POS sistemine gönderilecek.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0B1120',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Evet, Onayla',
+                cancelButtonText: 'İptal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Güncellendi!',
+                        text: 'Yeni fiyat tüm şubelerde ve online platformlarda aktif.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    // In real app, remove card or update UI state
+                }
+            });
+        }
+    </script>
+</body>
+</html>

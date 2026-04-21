@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitana POS V2.0 Pro - Restoran Otomasyonu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        kitanaDark: '#0F172A',
+                        kitanaPanel: '#1E293B',
+                        kitanaAccent: '#FF0056', 
+                        kitanaGreen: '#10B981', 
+                        kitanaWarning: '#F59E0B',
+                        kitanaGray: '#F1F5F9',
+                        kitanaTableEmpty: '#E2E8F0',
+                        kitanaTableBusy: '#EF4444', // Kırmızı
+                        kitanaTablePay: '#F59E0B', // Turuncu
+                        kitanaTableReserved: '#3B82F6' // Mavi
+                    },
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out'
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #F8FAFC; color: #334155; user-select: none; font-family: 'Poppins', sans-serif; }
+        /* Gizli Scrollbar ama kaydırılabilir */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .pos-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pos-card:active { transform: scale(0.96); }
+        
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        
+        /* PIN Pad Keys */
+        .pin-key {
+            @apply w-20 h-20 rounded-full bg-slate-700 text-white text-2xl font-bold flex items-center justify-center transition active:bg-kitanaAccent active:scale-90 shadow-lg;
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col font-sans">
+    <script>
+        if (window.self !== window.top) {
+            document.addEventListener('DOMContentLoaded', function() {
+                var sidebar = document.querySelector('#appContainer > aside');
+                if (sidebar) sidebar.style.display = 'none';
+            });
+        }
+    </script>
+
+    <div id="authScreen" class="fixed inset-0 z-[100] bg-kitanaDark flex flex-col items-center justify-center text-white">
+        <div class="mb-10 text-center animate-fade-in">
+            <h1 class="text-5xl font-black tracking-widest mb-2">KITANA<span class="text-kitanaAccent">.</span>POS</h1>
+            <p class="text-slate-400 text-sm tracking-widest uppercase">Restoran Otomasyon Sistemleri V2.0</p>
+        </div>
+
+        <div class="bg-slate-800 p-8 rounded-3xl shadow-2xl border border-slate-700 animate-slide-up">
+            <div class="mb-6">
+                <p class="text-center text-slate-400 mb-2 text-xs uppercase font-bold">Personel PIN Kodu</p>
+                <div class="flex justify-center gap-2 mb-4">
+                    <div id="dot1" class="w-4 h-4 rounded-full bg-slate-600 transition-colors"></div>
+                    <div id="dot2" class="w-4 h-4 rounded-full bg-slate-600 transition-colors"></div>
+                    <div id="dot3" class="w-4 h-4 rounded-full bg-slate-600 transition-colors"></div>
+                    <div id="dot4" class="w-4 h-4 rounded-full bg-slate-600 transition-colors"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <button onclick="enterPin(1)" class="pin-key">1</button>
+                <button onclick="enterPin(2)" class="pin-key">2</button>
+                <button onclick="enterPin(3)" class="pin-key">3</button>
+                <button onclick="enterPin(4)" class="pin-key">4</button>
+                <button onclick="enterPin(5)" class="pin-key">5</button>
+                <button onclick="enterPin(6)" class="pin-key">6</button>
+                <button onclick="enterPin(7)" class="pin-key">7</button>
+                <button onclick="enterPin(8)" class="pin-key">8</button>
+                <button onclick="enterPin(9)" class="pin-key">9</button>
+                <button onclick="clearPin()" class="pin-key bg-red-900 text-red-200"><i class="fa-solid fa-delete-left"></i></button>
+                <button onclick="enterPin(0)" class="pin-key">0</button>
+                <button onclick="submitPin()" class="pin-key bg-kitanaGreen text-white"><i class="fa-solid fa-check"></i></button>
+            </div>
+            
+            <div class="mt-6 text-center">
+                <p class="text-[10px] text-slate-500">Demo Kodları: Garson (1234) | Yönetici (9999)</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="appContainer" class="flex flex-1 h-full hidden">
+        
+        <aside class="w-24 bg-kitanaDark flex flex-col items-center py-6 z-40 shadow-xl border-r border-slate-800">
+            <div class="w-12 h-12 bg-kitanaAccent rounded-xl flex items-center justify-center text-white font-black text-xl mb-8 shadow-lg shadow-pink-900">K</div>
+            
+            <nav class="flex-1 space-y-4 w-full px-2">
+                <button onclick="changeView('tables')" id="btn-nav-tables" class="pos-card w-full aspect-square rounded-2xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex flex-col items-center justify-center transition active-nav">
+                    <i class="fa-solid fa-layer-group text-2xl mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">Salon</span>
+                </button>
+                
+                <button onclick="changeView('orders')" id="btn-nav-orders" class="pos-card w-full aspect-square rounded-2xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex flex-col items-center justify-center transition hidden">
+                    <i class="fa-solid fa-utensils text-2xl mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">Sipariş</span>
+                </button>
+
+                <button onclick="changeView('reports')" id="btn-nav-reports" class="pos-card w-full aspect-square rounded-2xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex flex-col items-center justify-center transition">
+                    <i class="fa-solid fa-chart-pie text-2xl mb-1"></i>
+                    <span class="text-[9px] font-bold uppercase">Rapor</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto flex flex-col gap-4 w-full px-2">
+                <div class="text-center group cursor-pointer relative">
+                    <div id="userAvatar" class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 mx-auto flex items-center justify-center text-white font-bold text-sm border-2 border-slate-600 group-hover:border-white transition">U</div>
+                    <span id="userRoleDisplay" class="text-[9px] text-slate-400 font-bold mt-1 block group-hover:text-white">...</span>
+                </div>
+                <button onclick="logout()" class="w-full aspect-square rounded-2xl bg-red-900/30 text-red-500 hover:bg-red-600 hover:text-white transition flex flex-col items-center justify-center">
+                    <i class="fa-solid fa-right-from-bracket text-xl"></i>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 relative bg-slate-100 overflow-hidden">
+            
+            <div id="view-tables" class="absolute inset-0 flex flex-col animate-fade-in">
+                <div class="h-16 bg-white border-b border-slate-200 flex items-center px-6 gap-4 shadow-sm z-20">
+                    <button onclick="filterTables('all')" class="zone-tab px-6 py-2 rounded-full bg-kitanaDark text-white text-sm font-bold shadow-lg shadow-slate-300 transition hover:-translate-y-1">Tümü</button>
+                    <button onclick="filterTables('Salon')" class="zone-tab px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition">Salon</button>
+                    <button onclick="filterTables('Bahçe')" class="zone-tab px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition">Bahçe</button>
+                    <button onclick="filterTables('Teras')" class="zone-tab px-6 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-sm font-bold hover:bg-slate-50 transition">Teras</button>
+                    
+                    <div class="ml-auto flex gap-4 text-xs font-bold text-slate-500">
+                        <span class="flex items-center"><span class="w-3 h-3 bg-slate-200 rounded-full mr-2"></span> Boş</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-kitanaTableBusy rounded-full mr-2"></span> Dolu</span>
+                        <span class="flex items-center"><span class="w-3 h-3 bg-kitanaTablePay rounded-full mr-2"></span> Ödeme</span>
+                    </div>
+                </div>
+
+                <div class="flex-1 p-6 overflow-y-auto bg-slate-100">
+                    <div id="tablesGrid" class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                        </div>
+                </div>
+            </div>
+
+            <div id="view-orders" class="absolute inset-0 flex hidden animate-fade-in">
+                <div class="flex-1 flex flex-col bg-slate-50">
+                    <div class="h-14 bg-white border-b border-slate-200 flex items-center px-2 gap-2 overflow-x-auto no-scrollbar" id="categoryList">
+                        </div>
+                    
+                    <div class="p-4 pb-2">
+                        <div class="relative">
+                            <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="menuSearch" onkeyup="filterMenu()" placeholder="Ürün Ara..." class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-kitanaAccent shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="flex-1 p-4 overflow-y-auto">
+                        <div id="menuGrid" class="grid grid-cols-3 lg:grid-cols-4 gap-4">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="w-[400px] bg-white border-l border-slate-200 flex flex-col shadow-2xl z-30">
+                    <div class="h-16 bg-slate-900 text-white flex items-center justify-between px-6">
+                        <div>
+                            <h2 class="font-black text-xl" id="ticketTableName">Masa --</h2>
+                            <p class="text-[10px] text-slate-400 font-mono" id="ticketTimer">Süre: 00:00</p>
+                        </div>
+                        <button onclick="changeView('tables')" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition"><i class="fa-solid fa-xmark mr-1"></i> Kapat</button>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4 space-y-2" id="ticketItems">
+                        </div>
+
+                    <div class="bg-slate-50 border-t border-slate-200 p-4">
+                        <div class="flex justify-between items-end mb-4">
+                            <span class="text-sm font-bold text-slate-500">TOPLAM TUTAR</span>
+                            <span class="text-4xl font-black text-slate-800" id="ticketTotal">0.00₺</span>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2 mb-3">
+                            <button onclick="ticketAction('note')" class="col-span-1 py-3 bg-white border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 text-xs font-bold flex flex-col items-center justify-center"><i class="fa-solid fa-comment mb-1"></i> Not</button>
+                            <button onclick="ticketAction('ikram')" class="col-span-1 py-3 bg-white border border-slate-300 rounded-xl text-slate-600 hover:bg-slate-50 text-xs font-bold flex flex-col items-center justify-center"><i class="fa-solid fa-gift mb-1"></i> İkram</button>
+                            <button onclick="ticketAction('iptal')" class="col-span-2 py-3 bg-red-50 border border-red-200 text-red-600 hover:bg-red-100 rounded-xl text-xs font-bold flex items-center justify-center"><i class="fa-solid fa-trash mr-2"></i> İptal</button>
+                        </div>
+
+                        <button onclick="openPayment()" class="pos-card w-full py-4 bg-gradient-to-r from-kitanaGreen to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-green-200 flex justify-between px-6 items-center">
+                            <span>ÖDEME AL</span>
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-reports" class="absolute inset-0 p-10 overflow-y-auto hidden bg-slate-100">
+                <div class="max-w-4xl mx-auto">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h2 class="text-3xl font-black text-slate-800">Gün Sonu Raporu (Z)</h2>
+                            <p class="text-slate-500 mt-1">Kasa Kapanış ve Mali Özet</p>
+                        </div>
+                        <button onclick="window.print()" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-700 shadow-lg"><i class="fa-solid fa-print mr-2"></i> Yazdır</button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-bold text-slate-400 uppercase">Toplam Ciro</p>
+                            <p class="text-4xl font-black text-kitanaDark mt-2" id="z-total">0.00 ₺</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-bold text-green-500 uppercase">Nakit Kasa</p>
+                            <p class="text-2xl font-bold text-slate-700 mt-2" id="z-cash">0.00 ₺</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-bold text-purple-500 uppercase">Kredi Kartı</p>
+                            <p class="text-2xl font-bold text-slate-700 mt-2" id="z-card">0.00 ₺</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="p-4 border-b border-slate-100 bg-slate-50 font-bold text-slate-700">İşlem Hareketleri</div>
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="text-xs uppercase text-slate-400 bg-white sticky top-0">
+                                    <tr>
+                                        <th class="p-4">Saat</th>
+                                        <th class="p-4">Personel</th>
+                                        <th class="p-4">Masa</th>
+                                        <th class="p-4">Ödeme Tipi</th>
+                                        <th class="p-4 text-right">Tutar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="z-transactions" class="divide-y divide-slate-100">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <div id="modifierModal" class="fixed inset-0 z-[60] bg-slate-900/80 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-[500px] rounded-3xl shadow-2xl overflow-hidden animate-slide-up">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-xl font-black text-slate-800" id="modModalTitle">Ürün Seçenekleri</h3>
+                <p class="text-sm text-slate-500">Lütfen tercihleri belirtin.</p>
+            </div>
+            <div class="p-6 space-y-4" id="modOptionsContainer">
+                </div>
+            <div class="p-6 bg-slate-50 border-t border-slate-200 flex gap-4">
+                <button onclick="closeModifierModal()" class="flex-1 py-3 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-white">İptal</button>
+                <button onclick="confirmModifiers()" class="flex-1 py-3 rounded-xl bg-kitanaDark text-white font-bold hover:bg-slate-800 shadow-lg">Ekle</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="fixed inset-0 z-[60] bg-slate-900/90 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-[900px] h-[600px] rounded-3xl shadow-2xl flex overflow-hidden animate-slide-up">
+            <div class="w-1/2 p-8 bg-slate-50 flex flex-col">
+                <div class="mb-6 text-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase">Tahsil Edilecek</p>
+                    <div class="relative mt-2">
+                        <input type="text" id="payInputDisplay" readonly class="w-full bg-white border-2 border-slate-200 rounded-2xl py-4 text-center text-4xl font-black text-slate-800 focus:border-kitanaAccent outline-none" value="0">
+                        <button onclick="setFullPay()" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs bg-slate-200 px-3 py-1 rounded font-bold hover:bg-slate-300">TÜMÜ</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3 flex-1">
+                    <button onclick="numpadClick(1)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">1</button>
+                    <button onclick="numpadClick(2)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">2</button>
+                    <button onclick="numpadClick(3)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">3</button>
+                    <button onclick="numpadClick(4)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">4</button>
+                    <button onclick="numpadClick(5)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">5</button>
+                    <button onclick="numpadClick(6)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">6</button>
+                    <button onclick="numpadClick(7)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">7</button>
+                    <button onclick="numpadClick(8)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">8</button>
+                    <button onclick="numpadClick(9)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">9</button>
+                    <button onclick="numpadClick('C')" class="bg-red-50 text-red-500 rounded-xl shadow-sm text-xl font-bold hover:bg-red-100 active:scale-95 transition">SIL</button>
+                    <button onclick="numpadClick(0)" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">0</button>
+                    <button onclick="numpadClick('.')" class="bg-white rounded-xl shadow-sm text-2xl font-bold text-slate-700 hover:bg-slate-100 active:scale-95 transition">.</button>
+                </div>
+            </div>
+
+            <div class="w-1/2 p-8 bg-white flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-black text-slate-800">Ödeme Yöntemi</h3>
+                        <button onclick="closePayment()" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-slate-500 font-bold">Toplam Hesap</span>
+                            <span class="text-xl font-black text-slate-800" id="modalTotal">0.00 ₺</span>
+                        </div>
+                        <div class="flex justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-slate-500 font-bold">Kalan</span>
+                            <span class="text-xl font-black text-kitanaAccent" id="modalRemaining">0.00 ₺</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 grid grid-cols-2 gap-4">
+                        <button onclick="processPayment('Nakit')" class="py-6 rounded-2xl border-2 border-green-100 bg-green-50 text-green-700 font-bold hover:bg-green-100 hover:border-green-300 transition flex flex-col items-center active:scale-95">
+                            <i class="fa-solid fa-money-bill-1 text-3xl mb-2"></i> NAKİT
+                        </button>
+                        <button onclick="processPayment('Kredi Kartı')" class="py-6 rounded-2xl border-2 border-purple-100 bg-purple-50 text-purple-700 font-bold hover:bg-purple-100 hover:border-purple-300 transition flex flex-col items-center active:scale-95">
+                            <i class="fa-regular fa-credit-card text-3xl mb-2"></i> KART
+                        </button>
+                        <button onclick="processPayment('Online')" class="py-6 rounded-2xl border-2 border-blue-100 bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 hover:border-blue-300 transition flex flex-col items-center active:scale-95">
+                            <i class="fa-solid fa-wifi text-3xl mb-2"></i> ONLINE
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="mt-4 border-t border-slate-100 pt-4">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-2">Alınan Parçalı Ödemeler</p>
+                    <ul id="paymentLogList" class="text-sm space-y-1 max-h-32 overflow-y-auto">
+                        </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        let currentUser = null;
+        let currentPin = "";
+        let currentTableId = null;
+        let activeZone = "all";
+        let tempItem = null; // For modifiers
+
+        // MENU DATA with Options
+        const categories = ["Burgerler", "Pizzalar", "Ana Yemek", "İçecekler", "Tatlılar"];
+        const menuItems = [
+            { id: 1, cat: "Burgerler", name: "Klasik Burger", price: 220, options: ["Az Pişmiş", "Orta", "Çok Pişmiş", "Soğansız"] },
+            { id: 2, cat: "Burgerler", name: "Cheeseburger", price: 240, options: ["Ekstra Peynir (+20)", "Turşusuz"] },
+            { id: 3, cat: "Pizzalar", name: "Margherita", price: 200, options: ["İnce Hamur", "Normal Hamur"] },
+            { id: 4, cat: "Ana Yemek", name: "Bonfile", price: 450, options: ["Az", "Orta", "İyi", "Mantar Sos", "Biber Sos"] },
+            { id: 5, cat: "İçecekler", name: "Cola Zero", price: 45, options: ["Buzlu", "Buzsuz", "Limonlu"] },
+            { id: 6, cat: "İçecekler", name: "Su (33cl)", price: 20, options: [] },
+            { id: 7, cat: "Tatlılar", name: "San Sebastian", price: 160, options: ["Çikolata Sos", "Sade"] },
+        ];
+
+        // INIT STATE (LocalStorage check or Default)
+        let tables = JSON.parse(localStorage.getItem('kitanaTables')) || Array.from({length: 24}, (_, i) => ({
+            id: i + 1,
+            name: `Masa ${i + 1}`,
+            zone: i < 8 ? 'Salon' : i < 16 ? 'Bahçe' : 'Teras',
+            status: 'empty', // empty, busy, paying
+            orders: [],
+            startTime: null,
+            total: 0,
+            paid: 0,
+            payments: []
+        }));
+
+        let salesHistory = JSON.parse(localStorage.getItem('kitanaSales')) || [];
+
+        // --- AUTH ---
+        function enterPin(num) {
+            if(currentPin.length < 4) {
+                currentPin += num;
+                updatePinDots();
+            }
+        }
+        function clearPin() {
+            currentPin = "";
+            updatePinDots();
+        }
+        function updatePinDots() {
+            for(let i=1; i<=4; i++) {
+                document.getElementById(`dot${i}`).className = `w-4 h-4 rounded-full transition-colors ${i <= currentPin.length ? 'bg-kitanaAccent' : 'bg-slate-600'}`;
+            }
+        }
+        function submitPin() {
+            if (currentPin === "9999") login("Yönetici", "admin");
+            else if (currentPin === "1234") login("Garson Ali", "waiter");
+            else {
+                toastr.error("Hatalı PIN Kodu!");
+                clearPin();
+                document.querySelector('.bg-slate-800').classList.add('animate-pulse'); // Shake effect visually
+                setTimeout(() => document.querySelector('.bg-slate-800').classList.remove('animate-pulse'), 500);
+            }
+        }
+        function login(name, role) {
+            currentUser = { name, role };
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('appContainer').classList.remove('hidden');
+            document.getElementById('userRoleDisplay').innerText = role === 'admin' ? 'YÖNETİCİ' : 'GARSON';
+            
+            // Render Tables
+            renderTables();
+            toastr.success(`Hoş geldin, ${name}`);
+        }
+        function logout() {
+            currentUser = null;
+            currentPin = "";
+            updatePinDots();
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('authScreen').classList.remove('hidden');
+        }
+
+        // --- NAVIGATION ---
+        function changeView(view) {
+            // Permission Check
+            if (view === 'reports' && currentUser.role !== 'admin') {
+                toastr.warning("Bu alana sadece yöneticiler girebilir.");
+                return;
+            }
+
+            document.getElementById('view-tables').classList.add('hidden');
+            document.getElementById('view-orders').classList.add('hidden');
+            document.getElementById('view-reports').classList.add('hidden');
+            
+            document.getElementById('view-' + view).classList.remove('hidden');
+
+            // Toggle active styles on sidebar
+            document.querySelectorAll('nav button').forEach(b => {
+                b.classList.remove('bg-kitanaAccent', 'text-white');
+                b.classList.add('bg-slate-800', 'text-slate-400');
+            });
+            document.getElementById('btn-nav-' + view).classList.remove('bg-slate-800', 'text-slate-400');
+            document.getElementById('btn-nav-' + view).classList.add('bg-kitanaAccent', 'text-white');
+
+            if(view === 'reports') renderZReport();
+        }
+
+        // --- TABLE LOGIC ---
+        function renderTables() {
+            const grid = document.getElementById('tablesGrid');
+            grid.innerHTML = '';
+            
+            const filteredTables = activeZone === 'all' ? tables : tables.filter(t => t.zone === activeZone);
+
+            filteredTables.forEach(t => {
+                let color = "bg-kitanaTableEmpty text-slate-500 border-slate-200";
+                let icon = "fa-chair";
+                let timeBadge = "";
+
+                if(t.status === 'busy') {
+                    color = "bg-kitanaTableBusy text-white border-red-600 shadow-md shadow-red-200";
+                    icon = "fa-utensils";
+                    // Calc duration
+                    const diff = Math.floor((Date.now() - t.startTime) / 60000);
+                    timeBadge = `<div class="absolute top-2 right-2 text-[10px] bg-black/20 px-2 rounded-full">${diff} dk</div>`;
+                } else if(t.status === 'paying') {
+                    color = "bg-kitanaTablePay text-white border-orange-500 animate-pulse";
+                    icon = "fa-wallet";
+                }
+
+                const card = document.createElement('div');
+                card.className = `${color} border-2 rounded-2xl h-32 flex flex-col items-center justify-center relative cursor-pointer pos-card`;
+                card.onclick = () => openTable(t.id);
+                card.innerHTML = `
+                    ${timeBadge}
+                    <span class="text-2xl font-black mb-1">${t.id}</span>
+                    <i class="fa-solid ${icon} text-lg opacity-80"></i>
+                    ${t.total > 0 ? `<div class="mt-2 text-xs font-bold bg-white/20 px-2 py-0.5 rounded">${t.total} ₺</div>` : ''}
+                    <div class="absolute bottom-2 text-[9px] font-bold opacity-60 uppercase">${t.zone}</div>
+                `;
+                grid.appendChild(card);
+            });
+            
+            // Save state
+            localStorage.setItem('kitanaTables', JSON.stringify(tables));
+        }
+
+        function filterTables(zone) {
+            activeZone = zone;
+            document.querySelectorAll('.zone-tab').forEach(b => {
+                b.classList.remove('bg-kitanaDark', 'text-white');
+                b.classList.add('bg-white', 'text-slate-600');
+            });
+            event.target.classList.remove('bg-white', 'text-slate-600');
+            event.target.classList.add('bg-kitanaDark', 'text-white');
+            renderTables();
+        }
+
+        function openTable(id) {
+            currentTableId = id;
+            const table = tables.find(t => t.id === id);
+            
+            document.getElementById('ticketTableName').innerText = table.name;
+            renderMenu();
+            renderTicket();
+            changeView('orders');
+        }
+
+        // --- ORDERING LOGIC ---
+        function renderMenu() {
+            // Render Categories
+            const catList = document.getElementById('categoryList');
+            catList.innerHTML = categories.map(cat => 
+                `<button onclick="filterMenu('${cat}')" class="px-5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold whitespace-nowrap hover:bg-slate-800 hover:text-white transition">${cat}</button>`
+            ).join('');
+
+            filterMenu('all'); // Show all initially
+        }
+
+        function filterMenu(category = 'all') {
+            const grid = document.getElementById('menuGrid');
+            const search = document.getElementById('menuSearch').value.toLowerCase();
+            grid.innerHTML = '';
+
+            let filtered = menuItems;
+            if(category !== 'all' && typeof category === 'string') filtered = menuItems.filter(i => i.cat === category);
+            if(search) filtered = menuItems.filter(i => i.name.toLowerCase().includes(search));
+
+            filtered.forEach(item => {
+                grid.innerHTML += `
+                    <button onclick="clickMenuItem(${item.id})" class="pos-card bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-kitanaAccent h-28 flex flex-col justify-between text-left group">
+                        <span class="font-bold text-slate-700 text-sm group-hover:text-kitanaAccent leading-tight">${item.name}</span>
+                        <span class="font-black text-slate-900">${item.price} ₺</span>
+                    </button>
+                `;
+            });
+        }
+
+        function clickMenuItem(id) {
+            tempItem = { ...menuItems.find(i => i.id === id), modifiers: [] };
+            
+            if (tempItem.options && tempItem.options.length > 0) {
+                // Show Modals
+                document.getElementById('modModalTitle').innerText = `${tempItem.name} - Seçenekler`;
+                const container = document.getElementById('modOptionsContainer');
+                container.innerHTML = tempItem.options.map(opt => `
+                    <label class="flex items-center space-x-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                        <input type="checkbox" value="${opt}" class="form-checkbox h-5 w-5 text-kitanaAccent rounded focus:ring-0">
+                        <span class="text-slate-700 font-medium">${opt}</span>
+                    </label>
+                `).join('');
+                document.getElementById('modifierModal').classList.remove('hidden');
+            } else {
+                addToTicket(tempItem);
+            }
+        }
+
+        function confirmModifiers() {
+            const checkboxes = document.querySelectorAll('#modOptionsContainer input:checked');
+            checkboxes.forEach(cb => {
+                // Check if price modifier included like "Cheese (+20)"
+                let modPrice = 0;
+                if(cb.value.includes('+')) {
+                    modPrice = parseInt(cb.value.match(/\+(\d+)/)[1]);
+                }
+                tempItem.modifiers.push({ name: cb.value, price: modPrice });
+                tempItem.price += modPrice;
+            });
+            addToTicket(tempItem);
+            closeModifierModal();
+        }
+
+        function closeModifierModal() {
+            document.getElementById('modifierModal').classList.add('hidden');
+            tempItem = null;
+        }
+
+        function addToTicket(item) {
+            const table = tables.find(t => t.id === currentTableId);
+            if (table.status === 'empty') {
+                table.status = 'busy';
+                table.startTime = Date.now();
+            }
+            
+            table.orders.push(item);
+            updateTableTotals(table);
+            renderTicket();
+            renderTables(); // Update sidebar badges if we added that
+        }
+
+        function renderTicket() {
+            const table = tables.find(t => t.id === currentTableId);
+            const list = document.getElementById('ticketItems');
+            list.innerHTML = '';
+
+            table.orders.forEach((order, idx) => {
+                let modHtml = order.modifiers && order.modifiers.length > 0 
+                    ? `<div class="text-[10px] text-slate-400 pl-2 border-l-2 border-slate-200 mt-1">${order.modifiers.map(m => m.name).join(', ')}</div>` 
+                    : '';
+
+                list.innerHTML += `
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between group">
+                        <div class="flex-1">
+                            <div class="font-bold text-slate-700 text-sm">${order.name}</div>
+                            ${modHtml}
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-slate-900">${order.price} ₺</div>
+                            ${currentUser.role === 'admin' ? `<button onclick="removeItem(${idx})" class="text-[10px] text-red-400 hover:text-red-600 mt-1 uppercase font-bold">Sil</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('ticketTotal').innerText = table.total.toFixed(2) + " ₺";
+            
+            // Timer update
+            if(table.startTime) {
+                const diff = Math.floor((Date.now() - table.startTime) / 60000);
+                document.getElementById('ticketTimer').innerText = `Süre: ${diff} dk`;
+            }
+        }
+
+        function removeItem(index) {
+            // Only admin can call this (checked in render but double check here)
+            const table = tables.find(t => t.id === currentTableId);
+            table.orders.splice(index, 1);
+            if(table.orders.length === 0) {
+                table.status = 'empty';
+                table.startTime = null;
+            }
+            updateTableTotals(table);
+            renderTicket();
+            renderTables();
+        }
+
+        function updateTableTotals(table) {
+            table.total = table.orders.reduce((sum, i) => sum + i.price, 0);
+            localStorage.setItem('kitanaTables', JSON.stringify(tables));
+        }
+
+        function ticketAction(type) {
+            if(type === 'iptal') {
+                if(currentUser.role !== 'admin') {
+                    toastr.error("İptal yetkiniz yok!");
+                    return;
+                }
+                if(confirm("Tüm sipariş iptal edilecek?")) {
+                    const table = tables.find(t => t.id === currentTableId);
+                    table.orders = [];
+                    table.total = 0;
+                    table.status = 'empty';
+                    table.paid = 0;
+                    table.payments = [];
+                    renderTicket();
+                    renderTables();
+                    changeView('tables');
+                    toastr.info("Masa iptal edildi.");
+                }
+            } else {
+                toastr.info("Bu özellik demo sürümünde aktif değil.");
+            }
+        }
+
+        // --- PAYMENT SYSTEM ---
+        let payInputVal = "0";
+
+        function openPayment() {
+            const table = tables.find(t => t.id === currentTableId);
+            if(table.total <= 0) return toastr.warning("Ödenecek tutar yok.");
+            
+            document.getElementById('paymentModal').classList.remove('hidden');
+            payInputVal = "0";
+            updatePaymentDisplay();
+        }
+
+        function closePayment() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+
+        function numpadClick(val) {
+            if (val === 'C') {
+                payInputVal = "0";
+            } else {
+                if(payInputVal === "0" && val !== '.') payInputVal = "";
+                payInputVal += val;
+            }
+            updatePaymentDisplay();
+        }
+
+        function setFullPay() {
+            const table = tables.find(t => t.id === currentTableId);
+            const remaining = table.total - table.paid;
+            payInputVal = remaining.toString();
+            updatePaymentDisplay();
+        }
+
+        function updatePaymentDisplay() {
+            const table = tables.find(t => t.id === currentTableId);
+            const remaining = table.total - table.paid;
+            
+            document.getElementById('payInputDisplay').value = payInputVal;
+            document.getElementById('modalTotal').innerText = table.total.toFixed(2) + " ₺";
+            document.getElementById('modalRemaining').innerText = remaining.toFixed(2) + " ₺";
+
+            // Render history
+            const list = document.getElementById('paymentLogList');
+            list.innerHTML = table.payments.map(p => `
+                <li class="flex justify-between border-b border-slate-100 pb-1">
+                    <span>${p.method}</span>
+                    <span class="font-bold">${p.amount.toFixed(2)} ₺</span>
+                </li>
+            `).join('');
+        }
+
+        function processPayment(method) {
+            const amount = parseFloat(payInputVal);
+            const table = tables.find(t => t.id === currentTableId);
+            const remaining = table.total - table.paid;
+
+            if (isNaN(amount) || amount <= 0) return toastr.warning("Tutar giriniz.");
+            if (amount > remaining) return toastr.error("Tutar kalan bakiyeden fazla!");
+
+            // Record Payment
+            table.paid += amount;
+            table.payments.push({ method, amount, time: new Date().toLocaleTimeString() });
+            
+            // Add to Sales History (Z-Report)
+            salesHistory.push({
+                time: new Date().toLocaleTimeString(),
+                staff: currentUser.name,
+                table: table.name,
+                method: method,
+                amount: amount
+            });
+            localStorage.setItem('kitanaSales', JSON.stringify(salesHistory));
+
+            table.status = 'paying'; // Visual feedback
+            updatePaymentDisplay();
+            payInputVal = "0";
+
+            // Check Finish
+            if (Math.abs(table.total - table.paid) < 0.1) {
+                toastr.success("Hesap Kapandı! Masa temizleniyor.");
+                closePayment();
+                
+                // Reset Table
+                table.status = 'empty';
+                table.orders = [];
+                table.total = 0;
+                table.paid = 0;
+                table.payments = [];
+                table.startTime = null;
+                
+                renderTables();
+                changeView('tables');
+            } else {
+                toastr.success("Parçalı ödeme alındı.");
+            }
+            updateTableTotals(table);
+        }
+
+        // --- Z-REPORT LOGIC ---
+        function renderZReport() {
+            let total = 0, cash = 0, card = 0;
+            const tbody = document.getElementById('z-transactions');
+            tbody.innerHTML = '';
+
+            // Reverse to show newest first
+            [...salesHistory].reverse().forEach(s => {
+                total += s.amount;
+                if(s.method === 'Nakit') cash += s.amount;
+                else card += s.amount;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="p-4 text-slate-500">${s.time}</td>
+                        <td class="p-4 font-bold text-slate-700">${s.staff}</td>
+                        <td class="p-4 text-slate-600">${s.table}</td>
+                        <td class="p-4"><span class="px-2 py-1 bg-slate-100 rounded text-xs font-bold">${s.method}</span></td>
+                        <td class="p-4 text-right font-bold">${s.amount.toFixed(2)} ₺</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('z-total').innerText = total.toFixed(2) + " ₺";
+            document.getElementById('z-cash').innerText = cash.toFixed(2) + " ₺";
+            document.getElementById('z-card').innerText = card.toFixed(2) + " ₺";
+        }
+
+        // --- TICKER & INIT ---
+        setInterval(() => {
+            // Update table timers every minute
+            if (currentUser) renderTables();
+        }, 60000);
+
+    </script>
+</body>
+</html>

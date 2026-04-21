@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitana — Genel Bakis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: { accent: '#FF0056', green: '#10B981', danger: '#EF4444', warning: '#F59E0B', info: '#3B82F6', border: '#E8ECF2', bg: '#F5F7FA', dark: '#0B1120' },
+                fontFamily: { sans: ['Poppins', 'sans-serif'] }
+            }}
+        }
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        body { background: #F5F7FA; color: #2d3a4a; font-family: 'Poppins', sans-serif; }
+        ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: #d1d9e6; border-radius: 4px; }
+
+        .tab-btn { display: flex; align-items: center; gap: 7px; padding: 0 14px; height: 100%; font-size: 12.5px; font-weight: 500; color: #8898aa; border: none; border-bottom: 2px solid transparent; background: none; cursor: pointer; white-space: nowrap; transition: color .15s; }
+        .tab-btn:hover { color: #4a5568; }
+        .tab-btn.active { color: #FF0056; border-bottom-color: #FF0056; font-weight: 600; }
+        .tab-btn .badge { background: #FF0056; color: #fff; font-size: 9px; padding: 1px 5px; border-radius: 10px; font-weight: 700; }
+
+        .pane { display: none; }
+        .pane.on { display: block; animation: pop .22s ease; }
+        @keyframes pop { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .sub-btn { padding: 5px 14px; font-size: 12.5px; font-weight: 500; color: #8898aa; border: none; border-bottom: 2px solid transparent; background: none; cursor: pointer; transition: all .15s; }
+        .sub-btn.active { color: #FF0056; border-bottom-color: #FF0056; font-weight: 600; }
+
+        .card { background: #fff; border: 1px solid #E8ECF2; border-radius: 12px; }
+        .inp { width: 100%; background: #fff; border: 1px solid #E8ECF2; border-radius: 8px; padding: 7px 11px; font-size: 13px; font-family: 'Poppins', sans-serif; transition: border-color .2s; outline: none; }
+        .inp:focus { border-color: #FF0056; }
+        .btn-primary { background: #FF0056; color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 12.5px; font-weight: 600; font-family: 'Poppins', sans-serif; cursor: pointer; transition: background .15s; }
+        .btn-primary:hover { background: #d9004a; }
+        .btn-ghost { background: #fff; color: #4a5568; border: 1px solid #E8ECF2; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 500; font-family: 'Poppins', sans-serif; cursor: pointer; transition: background .15s; }
+        .btn-ghost:hover { background: #F5F7FA; }
+
+        th { background: #F5F7FA; color: #8898aa; font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; padding: 9px 14px; text-align: left; }
+        td { border-bottom: 1px solid #F0F3F8; padding: 10px 14px; font-size: 13px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #FAFBFD; }
+
+        .stat-label { font-size: 10px; font-weight: 600; color: #8898aa; text-transform: uppercase; letter-spacing: .06em; }
+        .stat-val { font-size: 1.75rem; font-weight: 800; color: #1a2535; letter-spacing: -.02em; }
+
+        .order-item { border-left: 3px solid transparent; border-radius: 8px; padding: 10px 12px; transition: transform .2s; }
+        .order-item:hover { transform: translateX(3px); }
+        .order-new { border-left-color: #10B981; background: #f0fdf4; }
+        .order-prep { border-left-color: #F59E0B; background: #fffbeb; }
+
+        .pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Header + Tabs -->
+    <div class="bg-white border-b border-[#E8ECF2] flex-shrink-0 z-20">
+        <div class="h-12 flex items-center justify-between px-6 border-b border-[#F0F3F8]">
+            <div class="flex items-center gap-3">
+                <span class="text-sm font-semibold text-slate-700">Genel Bakis</span>
+                <span class="text-xs px-2.5 py-0.5 bg-blue-50 text-blue-500 rounded-full font-semibold border border-blue-100">
+                    <i class="fa-solid fa-location-dot mr-1 text-[10px]"></i>Izmir, 24°C
+                </span>
+            </div>
+            <div class="text-right">
+                <div class="stat-label">Canli Satis</div>
+                <div class="text-sm font-bold text-[#10B981] pulse">12.450 TL</div>
+            </div>
+        </div>
+        <div class="h-10 flex items-stretch px-3 overflow-x-auto" style="scrollbar-width:none">
+            <button class="tab-btn active" id="t-overview" onclick="tab('overview',this)"><i class="fa-solid fa-chart-line text-[11px]"></i> Genel Bakis</button>
+            <button class="tab-btn" id="t-recipes" onclick="tab('recipes',this)"><i class="fa-solid fa-utensils text-[11px]"></i> Recete</button>
+            <button class="tab-btn" id="t-invoices" onclick="tab('invoices',this)"><i class="fa-solid fa-file-invoice text-[11px]"></i> Faturalar <span class="badge">3</span></button>
+            <button class="tab-btn" id="t-stock" onclick="tab('stock',this)"><i class="fa-solid fa-boxes-stacked text-[11px]"></i> Stok</button>
+            <button class="tab-btn" id="t-menu" onclick="tab('menu',this)"><i class="fa-solid fa-book-open text-[11px]"></i> Menu Analizi</button>
+            <button class="tab-btn" id="t-integrations" onclick="tab('integrations',this)"><i class="fa-solid fa-plug text-[11px]"></i> Entegrasyonlar</button>
+        </div>
+    </div>
+
+    <main class="flex-1 overflow-y-auto p-6 bg-[#F5F7FA]">
+
+        <!-- GENEL BAKIS -->
+        <div id="overview" class="pane on">
+            <!-- Enflasyon chart -->
+            <div class="card p-5 mb-5">
+                <div class="flex justify-between items-start mb-1">
+                    <div>
+                        <div class="text-sm font-semibold text-slate-700">Ham Madde Enflasyon Izleme</div>
+                        <div class="text-xs text-slate-400 mt-0.5">Son 12 haftada tedarik maliyetlerinin degisimi</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="stat-label">Toplam Artis</div>
+                        <div class="text-2xl font-black text-[#EF4444]">+%18.4</div>
+                    </div>
+                </div>
+                <div id="inflationChart"></div>
+            </div>
+
+            <!-- KPI row -->
+            <div class="grid grid-cols-4 gap-4 mb-5">
+                <div class="card p-5">
+                    <div class="stat-label mb-1">Prime Cost</div>
+                    <div class="stat-val">%58.4</div>
+                    <div class="flex items-center mt-2 gap-1 text-xs text-[#10B981] font-semibold"><i class="fa-solid fa-arrow-down text-[10px]"></i> %1.2 iyilesme</div>
+                    <div class="w-full bg-slate-100 h-1 mt-3 rounded-full"><div class="bg-[#0B1120] h-1 rounded-full" style="width:58%"></div></div>
+                </div>
+                <div class="card p-5">
+                    <div class="stat-label mb-1">Gunluk Ciro</div>
+                    <div class="stat-val text-[#10B981]">24.850</div>
+                    <div class="text-xs text-slate-400 mt-1">TL</div>
+                    <div class="flex items-center mt-2 gap-1 text-xs text-[#10B981] font-semibold"><i class="fa-solid fa-arrow-up text-[10px]"></i> %8.5 hedef uzeri</div>
+                </div>
+                <div class="card p-5">
+                    <div class="stat-label mb-1">Iptal / Iade</div>
+                    <div class="stat-val text-[#EF4444]">1.250</div>
+                    <div class="text-xs text-slate-400 mt-1">TL</div>
+                    <div class="flex items-center mt-2 gap-1 text-xs text-[#EF4444] font-semibold"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Dikkat gerektiriyor</div>
+                </div>
+                <div class="card p-5 bg-[#0B1120] border-0 text-white">
+                    <div class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Aksiyon Gerekiyor</div>
+                    <div class="space-y-3">
+                        <button onclick="tab('stock', document.getElementById('t-stock'))" class="flex justify-between items-center text-xs w-full hover:text-[#FF0056] transition"><span class="text-slate-400"><i class="fa-solid fa-circle-exclamation mr-1.5 text-[#EF4444]"></i>Kritik Stok</span><span class="font-bold">6 urun</span></button>
+                        <button onclick="tab('invoices', document.getElementById('t-invoices'))" class="flex justify-between items-center text-xs w-full hover:text-[#FF0056] transition"><span class="text-slate-400"><i class="fa-solid fa-file-invoice mr-1.5 text-[#F59E0B]"></i>Bekleyen Fatura</span><span class="font-bold">3 adet</span></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts + Mutfak -->
+            <div class="grid grid-cols-3 gap-4 mb-4">
+                <div class="col-span-2 card p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <div class="text-sm font-semibold text-slate-700">Satis ve Maliyet</div>
+                            <div class="text-xs text-slate-400">Son 7 gun</div>
+                        </div>
+                        <button class="btn-ghost text-xs">Detayli Rapor</button>
+                    </div>
+                    <div id="salesChart"></div>
+                </div>
+                <div class="card flex flex-col overflow-hidden">
+                    <div class="px-4 py-3 border-b border-[#F0F3F8] bg-[#FAFBFD] flex justify-between items-center flex-shrink-0">
+                        <div class="text-sm font-semibold text-slate-700 flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981] pulse inline-block"></span> Mutfak Akisi</div>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-widest">CANLI</span>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-3 space-y-2">
+                        <div class="order-item order-new border border-green-100"><div class="flex justify-between mb-1"><span class="text-xs font-semibold">Masa 12</span><span class="text-[10px] text-slate-400">Simdi</span></div><p class="text-xs text-slate-600">2x Klasik Burger, 1x Kola</p></div>
+                        <div class="order-item order-prep border border-yellow-100"><div class="flex justify-between mb-1"><span class="text-xs font-semibold">Masa 05</span><span class="text-[10px] text-slate-400">4dk</span></div><p class="text-xs text-slate-600">1x Tiramisu, 2x Cay</p></div>
+                        <div class="order-item order-prep border border-yellow-100"><div class="flex justify-between mb-1"><span class="text-xs font-semibold">Paket #992</span><span class="text-[10px] text-slate-400">6dk</span></div><p class="text-xs text-slate-600">3x Sezar Salata</p></div>
+                        <div class="order-item bg-slate-50 border border-slate-100 opacity-50"><div class="flex justify-between mb-1"><span class="text-xs font-semibold text-slate-400">Masa 08</span><span class="text-[10px] text-slate-400">12dk</span></div><p class="text-xs text-slate-400 line-through">Teslim Edildi</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap + Quick Actions -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="col-span-2 card p-5">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="text-sm font-semibold text-slate-700">Saatlik Yogunluk Haritasi</div>
+                        <div class="flex gap-3 text-[10px] text-slate-400">
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-[#7f1d1d]"></span>Yogun</span>
+                            <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-[#fecaca]"></span>Sakin</span>
+                        </div>
+                    </div>
+                    <div id="heatmap"></div>
+                </div>
+                <div class="card p-5 flex flex-col gap-3">
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Hizli Erisim</div>
+                    <button onclick="tab('recipes', document.getElementById('t-recipes'))" class="flex items-center gap-3 p-3 rounded-xl border border-[#E8ECF2] hover:border-[#FF0056] hover:shadow-sm transition group text-left">
+                        <div class="w-9 h-9 rounded-lg bg-red-50 text-[#FF0056] flex items-center justify-center text-sm group-hover:scale-110 transition"><i class="fa-solid fa-calculator"></i></div>
+                        <div><div class="text-xs font-semibold text-slate-700 group-hover:text-[#FF0056] transition">Maliyet Hesapla</div><div class="text-[10px] text-slate-400">Yeni urun veya recete</div></div>
+                    </button>
+                    <button onclick="tab('invoices', document.getElementById('t-invoices'))" class="flex items-center gap-3 p-3 rounded-xl border border-[#E8ECF2] hover:border-[#10B981] hover:shadow-sm transition group text-left">
+                        <div class="w-9 h-9 rounded-lg bg-green-50 text-[#10B981] flex items-center justify-center text-sm group-hover:scale-110 transition"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                        <div><div class="text-xs font-semibold text-slate-700 group-hover:text-[#10B981] transition">Fatura Yukle</div><div class="text-[10px] text-slate-400">OCR ile otomatik islem</div></div>
+                    </button>
+                    <button onclick="tab('stock', document.getElementById('t-stock'))" class="flex items-center gap-3 p-3 rounded-xl border border-[#E8ECF2] hover:border-[#3B82F6] hover:shadow-sm transition group text-left">
+                        <div class="w-9 h-9 rounded-lg bg-blue-50 text-[#3B82F6] flex items-center justify-center text-sm group-hover:scale-110 transition"><i class="fa-solid fa-boxes-stacked"></i></div>
+                        <div><div class="text-xs font-semibold text-slate-700 group-hover:text-[#3B82F6] transition">Stok Takip</div><div class="text-[10px] text-slate-400">6 kritik urun var</div></div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RECETE -->
+        <div id="recipes" class="pane">
+            <div class="flex border-b border-[#E8ECF2] mb-5">
+                <button class="sub-btn active" id="sub-r-new" onclick="sub('r','new',this)">Yeni Recete</button>
+                <button class="sub-btn" id="sub-r-saved" onclick="sub('r','saved',this)">Kayitli Receteler</button>
+            </div>
+            <div id="r-new">
+                <div class="grid grid-cols-12 gap-5">
+                    <div class="col-span-8 space-y-4">
+                        <div class="card p-5">
+                            <div class="text-sm font-semibold text-slate-700 mb-4">Recete Bilgileri</div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-semibold text-slate-400 mb-1.5">Recete Adi</label><input class="inp" value="Klasik Hamburger"></div>
+                                <div><label class="block text-xs font-semibold text-slate-400 mb-1.5">Kategori</label><select class="inp"><option>Burgerler</option><option>Ana Yemek</option></select></div>
+                            </div>
+                        </div>
+                        <div class="card p-5">
+                            <div class="flex justify-between mb-4"><div class="text-sm font-semibold text-slate-700">Malzemeler</div><span class="text-[11px] text-slate-400">Birim fiyatlar stoktan cekilir</span></div>
+                            <div id="ing-list" class="space-y-2"></div>
+                            <button onclick="addIng()" class="mt-4 text-xs font-semibold text-[#FF0056] hover:underline"><i class="fa-solid fa-plus mr-1 text-[10px]"></i>Satir Ekle</button>
+                        </div>
+                    </div>
+                    <div class="col-span-4 space-y-4">
+                        <div class="card p-5" style="background:#0B1120;border:0;">
+                            <div class="stat-label" style="color:#3d5470;">Toplam Maliyet</div>
+                            <div id="cost-display" class="text-3xl font-black text-[#10B981] mt-2">0.00 TL</div>
+                        </div>
+                        <div class="card p-5">
+                            <label class="block text-xs font-semibold text-slate-400 mb-2">Hedef Carpan (x)</label>
+                            <input type="number" id="multiplier" value="3.3" step="0.1" oninput="calcRecipe()" class="inp text-center text-xl font-bold">
+                            <div class="mt-4 pt-4 border-t border-[#F0F3F8] text-center">
+                                <div class="stat-label mb-1">Onerilen Fiyat</div>
+                                <div id="price-display" class="text-2xl font-black text-slate-800">0.00 TL</div>
+                            </div>
+                        </div>
+                        <button class="btn-primary w-full py-2.5 text-sm">Kaydet</button>
+                    </div>
+                </div>
+            </div>
+            <div id="r-saved" class="hidden">
+                <div class="card overflow-hidden">
+                    <table class="w-full"><thead><tr><th>Recete Adi</th><th>Kategori</th><th class="text-right">Maliyet</th><th class="text-right">Satis Fiyati</th><th class="text-center">Durum</th><th class="text-center">Islem</th></tr></thead>
+                    <tbody>
+                        <tr><td class="font-semibold text-sm">Smoke Burger</td><td class="text-xs text-slate-400">Burger</td><td class="text-right text-sm">85.00 TL</td><td class="text-right text-sm">290.00 TL</td><td class="text-center"><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">Karli</span></td><td class="text-center"><button class="text-slate-400 hover:text-[#FF0056] text-xs"><i class="fa-solid fa-pen"></i></button></td></tr>
+                        <tr><td class="font-semibold text-sm">Sezar Salata</td><td class="text-xs text-slate-400">Salata</td><td class="text-right text-sm">45.00 TL</td><td class="text-right text-sm">180.00 TL</td><td class="text-center"><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">Karli</span></td><td class="text-center"><button class="text-slate-400 hover:text-[#FF0056] text-xs"><i class="fa-solid fa-pen"></i></button></td></tr>
+                    </tbody></table>
+                </div>
+            </div>
+        </div>
+
+        <!-- FATURALAR -->
+        <div id="invoices" class="pane">
+            <div class="grid grid-cols-3 gap-4 mb-5">
+                <div class="card p-5 flex items-center justify-between"><div><div class="stat-label">Odenecek</div><div class="stat-val mt-1">18.450 TL</div></div><div class="w-10 h-10 rounded-xl bg-blue-50 text-[#3B82F6] flex items-center justify-center"><i class="fa-solid fa-calendar-week"></i></div></div>
+                <div class="card p-5 flex items-center justify-between"><div><div class="stat-label">Onay Bekleyen</div><div class="stat-val text-[#F59E0B] mt-1">3 Fatura</div></div><div class="w-10 h-10 rounded-xl bg-orange-50 text-[#F59E0B] flex items-center justify-center"><i class="fa-solid fa-clock"></i></div></div>
+                <div class="card p-5 flex items-center justify-between"><div><div class="stat-label">Fiyat Alarmi</div><div class="stat-val text-[#EF4444] mt-1">2 Urun</div></div><div class="w-10 h-10 rounded-xl bg-red-50 text-[#EF4444] flex items-center justify-center"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+            </div>
+            <div class="flex justify-between items-center mb-3">
+                <div class="text-sm font-semibold text-slate-700">Fatura Listesi</div>
+                <div class="flex gap-2"><button class="btn-ghost text-xs"><i class="fa-solid fa-filter mr-1"></i>Filtrele</button><button class="btn-primary text-xs"><i class="fa-solid fa-upload mr-1"></i>Yeni Yukle</button></div>
+            </div>
+            <div class="card overflow-hidden">
+                <table class="w-full"><thead><tr><th>Durum</th><th>Tedarikci</th><th>Kategori</th><th>Vade</th><th>Fiyat Analizi</th><th class="text-right">Tutar</th><th class="text-center">Islem</th></tr></thead>
+                <tbody>
+                    <tr onclick="openModal()" style="cursor:pointer"><td><span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded font-semibold">Onay Bekliyor</span></td><td><div class="text-xs font-semibold">Etci Mehmet Ltd.</div><div class="text-[10px] text-yellow-500"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i><i class="fa-regular fa-star"></i></div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium">Et</span></td><td><span class="text-[10px] text-[#EF4444] font-bold">Son 2 Gun</span></td><td><span class="text-[10px] font-bold text-[#EF4444] flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up text-[9px]"></i>%12 Artis</span></td><td class="text-right text-sm font-bold">4,520 TL</td><td class="text-center"><i class="fa-solid fa-eye text-[#FF0056] text-xs"></i></td></tr>
+                    <tr><td><span class="text-[10px] bg-green-100 text-green-600 px-2 py-0.5 rounded font-semibold">Islendi</span></td><td><div class="text-xs font-semibold">Hal Sebze Dunyasi</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium">Sebze</span></td><td><span class="text-[10px] text-slate-400 font-medium">28 Gun Var</span></td><td><span class="text-[10px] font-bold text-[#10B981] flex items-center gap-1"><i class="fa-solid fa-arrow-trend-down text-[9px]"></i>%5 Indirim</span></td><td class="text-right text-sm font-bold">850 TL</td><td class="text-center"><i class="fa-solid fa-file-pdf text-slate-300 text-xs"></i></td></tr>
+                    <tr><td><span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-semibold">Odendi</span></td><td><div class="text-xs font-semibold">Gediz Elektrik A.S</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium">Enerji</span></td><td><span class="text-[10px] text-blue-500 font-medium">Tamamlandi</span></td><td><span class="text-[10px] text-slate-400">—</span></td><td class="text-right text-sm font-bold">12,400 TL</td><td class="text-center"><i class="fa-solid fa-file-pdf text-slate-300 text-xs"></i></td></tr>
+                    <tr><td><span class="text-[10px] bg-orange-100 text-orange-600 px-2 py-0.5 rounded font-semibold">Onay Bekliyor</span></td><td><div class="text-xs font-semibold">Metro Gross Market</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-medium">Kuru Gida</span></td><td><span class="text-[10px] text-[#F59E0B] font-medium">15 Gun Var</span></td><td><span class="text-[10px] text-slate-400">Stabil</span></td><td class="text-right text-sm font-bold">3,200 TL</td><td class="text-center"><i class="fa-solid fa-eye text-[#FF0056] text-xs"></i></td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- STOK -->
+        <div id="stock" class="pane">
+            <div class="grid grid-cols-3 gap-4 mb-5">
+                <div class="card p-5"><div class="stat-label">Toplam Stok Degeri</div><div class="stat-val text-[#10B981] mt-1">42.500 TL</div></div>
+                <div class="card p-5"><div class="stat-label">Tuketim Alarmi</div><div class="stat-val text-[#EF4444] mt-1">2 Urun</div><div class="text-[11px] text-slate-400 mt-1">24 saat icinde tukenecek</div></div>
+                <div class="card p-5"><div class="stat-label">Kritik Stok</div><div class="stat-val text-[#F59E0B] mt-1">6 Urun</div><div class="text-[11px] text-slate-400 mt-1">Siparis onerilir</div></div>
+            </div>
+            <div class="card overflow-hidden">
+                <table class="w-full"><thead><tr><th>Urun</th><th>Kategori</th><th class="text-right">Miktar</th><th>Tahmini Sure</th><th>SKT</th><th>Durum</th></tr></thead>
+                <tbody>
+                    <tr><td><div class="text-xs font-semibold">Dana Kiyma</div><div class="text-[10px] text-slate-400">Etci Mehmet</div></td><td><span class="text-[10px] bg-red-50 text-red-500 px-2 py-0.5 rounded font-semibold">Et</span></td><td class="text-right text-xs font-bold text-[#EF4444]">3 Kg</td><td><div class="w-20 bg-slate-200 rounded h-1 mb-1"><div class="bg-[#EF4444] h-1 rounded" style="width:15%"></div></div><span class="text-[10px] text-[#EF4444] font-bold">KRITIK</span></td><td><span class="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded font-semibold">2 Gun</span></td><td><span class="text-[10px] font-bold text-[#EF4444]">Acil Siparis</span></td></tr>
+                    <tr><td><div class="text-xs font-semibold">Pizza Unu</div><div class="text-[10px] text-slate-400">Metro Gross</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-semibold">Kuru Gida</span></td><td class="text-right text-xs font-bold">50 Kg</td><td><div class="w-20 bg-slate-200 rounded h-1 mb-1"><div class="bg-[#10B981] h-1 rounded" style="width:70%"></div></div><span class="text-[10px] text-[#10B981] font-bold">12 Gun Yeter</span></td><td><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">6 Ay</span></td><td><span class="text-[10px] font-bold text-[#10B981]">Optimal</span></td></tr>
+                    <tr><td><div class="text-xs font-semibold">Sut (Tam Yagli)</div><div class="text-[10px] text-slate-400">Sutcu</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-semibold">Sut Urunu</span></td><td class="text-right text-xs font-bold text-[#F59E0B]">8 Lt</td><td><div class="w-20 bg-slate-200 rounded h-1 mb-1"><div class="bg-[#F59E0B] h-1 rounded" style="width:80%"></div></div><span class="text-[10px] text-[#F59E0B] font-bold">2 Gun Yeter</span></td><td><span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-semibold">5 Gun</span></td><td><span class="text-[10px] font-bold text-[#F59E0B]">Azaliyor</span></td></tr>
+                    <tr><td><div class="text-xs font-semibold">Bira (Fici)</div><div class="text-[10px] text-slate-400">Efes</div></td><td><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-semibold">Alkol</span></td><td class="text-right text-xs font-bold">2 Keg</td><td><div class="w-20 bg-slate-200 rounded h-1 mb-1"><div class="bg-[#10B981] h-1 rounded" style="width:30%"></div></div><span class="text-[10px] text-[#10B981] font-bold">5 Gun Yeter</span></td><td><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">3 Ay</span></td><td><span class="text-[10px] font-bold text-[#10B981]">Yeterli</span></td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- MENU -->
+        <div id="menu" class="pane">
+            <div class="text-sm font-semibold text-slate-700 mb-4">Menu Analizi</div>
+            <div class="card overflow-hidden">
+                <table class="w-full"><thead><tr><th>Urun Adi</th><th class="text-right">Maliyet</th><th class="text-right">Satis Fiyati</th><th class="text-right">Kar Marji</th><th class="text-right">Carpan</th><th>Analiz</th></tr></thead>
+                <tbody>
+                    <tr><td class="font-semibold text-sm">Klasik Hamburger</td><td class="text-right text-xs">55.00 TL</td><td class="text-right text-xs">180.00 TL</td><td class="text-right text-xs font-bold text-[#10B981]">%69</td><td class="text-right text-xs">3.27x</td><td><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">Optimal</span></td></tr>
+                    <tr><td class="font-semibold text-sm">Tiramisu</td><td class="text-right text-xs">45.00 TL</td><td class="text-right text-xs">140.00 TL</td><td class="text-right text-xs font-bold text-yellow-600">%67</td><td class="text-right text-xs">3.11x</td><td><span class="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-semibold">Iyilestirilebilir</span></td></tr>
+                    <tr><td class="font-semibold text-sm">Sezar Salata</td><td class="text-right text-xs">28.00 TL</td><td class="text-right text-xs">95.00 TL</td><td class="text-right text-xs font-bold text-[#10B981]">%71</td><td class="text-right text-xs">3.39x</td><td><span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded font-semibold">Optimal</span></td></tr>
+                </tbody></table>
+            </div>
+        </div>
+
+        <!-- ENTEGRASYONLAR -->
+        <div id="integrations" class="pane">
+            <div class="text-sm font-semibold text-slate-700 mb-4">Entegrasyonlar</div>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="card p-5 flex items-center gap-4"><div class="w-11 h-11 bg-red-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">YS</div><div><div class="text-sm font-semibold">Yemeksepeti</div><div class="text-[11px] text-[#10B981] font-semibold mt-0.5">Bagli</div></div></div>
+                <div class="card p-5 flex items-center gap-4 opacity-60"><div class="w-11 h-11 bg-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">GY</div><div><div class="text-sm font-semibold">Getir Yemek</div><button class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium mt-1 hover:bg-slate-200">Bagla</button></div></div>
+                <div class="card p-5 flex items-center gap-4 opacity-60"><div class="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center text-white font-bold text-sm">TR</div><div><div class="text-sm font-semibold">Trendyol Yemek</div><button class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium mt-1 hover:bg-slate-200">Bagla</button></div></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center backdrop-blur-sm">
+        <div class="bg-white w-[88%] max-w-5xl h-[82vh] rounded-2xl shadow-2xl flex overflow-hidden">
+            <div class="w-1/2 bg-slate-800 p-8 flex items-center justify-center relative">
+                <div class="absolute top-4 left-4 bg-black/40 text-white px-3 py-1 rounded text-xs font-medium">Orijinal Belge</div>
+                <div class="bg-white w-3/4 h-full shadow-xl p-8 text-xs font-mono overflow-y-auto rounded-lg">
+                    <div class="text-center border-b pb-4 mb-4"><div class="text-base font-bold">ETCI MEHMET LTD.</div><div class="text-slate-400">Izmir, TR — 25.01.2026</div></div>
+                    <table class="w-full mb-4 text-xs"><tr class="border-b"><th class="text-left py-1">Urun</th><th class="text-right py-1">Tutar</th></tr><tr><td class="py-1">Dana Kiyma (10kg)</td><td class="text-right">3,500.00</td></tr><tr><td class="py-1">Kuzu Kusbasi (2kg)</td><td class="text-right">900.00</td></tr></table>
+                    <div class="text-right font-bold border-t pt-3">TOPLAM: 4,520.00 TL</div>
+                </div>
+            </div>
+            <div class="w-1/2 p-7 flex flex-col bg-[#FAFBFD]">
+                <div class="flex justify-between items-center mb-5"><div class="text-lg font-bold text-slate-800">OCR Sonuclari</div><button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button></div>
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div><label class="text-[10px] font-semibold text-slate-400 block mb-1">Tedarikci</label><input class="inp" value="Etci Mehmet Ltd."></div>
+                    <div><label class="text-[10px] font-semibold text-slate-400 block mb-1">Tarih</label><input class="inp" value="25.01.2026"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-400 block mb-1">Fatura No</label><input class="inp" value="INV-2024-001"></div>
+                    <div><label class="text-[10px] font-semibold text-slate-400 block mb-1">Toplam</label><input class="inp font-bold text-[#FF0056]" value="4,520.00 TL"></div>
+                </div>
+                <div class="flex-1 overflow-y-auto border-t border-slate-200 pt-4">
+                    <div class="text-xs font-semibold text-slate-600 mb-2">Kalem Eslestirme</div>
+                    <div class="space-y-2">
+                        <div class="bg-white p-3 border border-green-200 rounded-xl flex items-center gap-3"><i class="fa-solid fa-check text-[#10B981] text-xs"></i><div class="flex-1"><div class="text-xs font-semibold">Dana Kiyma</div><div class="text-[10px] text-slate-400">10 Kg x 350 TL</div></div><span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium">Et</span></div>
+                        <div class="bg-white p-3 border border-green-200 rounded-xl flex items-center gap-3"><i class="fa-solid fa-check text-[#10B981] text-xs"></i><div class="flex-1"><div class="text-xs font-semibold">Kuzu Kusbasi</div><div class="text-[10px] text-slate-400">2 Kg x 450 TL</div></div><span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded font-medium">Et</span></div>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-5">
+                    <button onclick="closeModal()" class="btn-ghost flex-1 text-sm py-2.5">Iptal</button>
+                    <button onclick="closeModal()" class="btn-primary flex-1 text-sm py-2.5">Onayla ve Isle</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ings = [{name:'Dana Kiyma',unit:'Kg',price:350,qty:.15},{name:'Brioche Ekmek',unit:'Adet',price:12.5,qty:1}];
+
+        function tab(id, btn) {
+            document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+            document.getElementById(id).classList.add('on');
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            (btn || document.getElementById('t-'+id)).classList.add('active');
+        }
+        function sub(p, id, btn) {
+            document.getElementById(p+'-new') && document.getElementById(p+'-new').classList.add('hidden');
+            document.getElementById(p+'-saved') && document.getElementById(p+'-saved').classList.add('hidden');
+            document.getElementById(p+'-'+id).classList.remove('hidden');
+            document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        // sub-pane ids for recipes
+        function sub(group, id, btn) {
+            ['new','saved'].forEach(s=>{const el=document.getElementById(group+'-'+s); if(el) el.classList.add('hidden');});
+            const target = document.getElementById(group+'-'+id);
+            if(target) target.classList.remove('hidden');
+            document.querySelectorAll('.sub-btn').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function renderIngs() {
+            document.getElementById('ing-list').innerHTML = ings.map((g,i)=>`
+                <div class="flex items-center gap-2 p-2 bg-[#F5F7FA] rounded-lg border border-[#E8ECF2]">
+                    <input class="inp flex-1 text-xs py-1" value="${g.name}">
+                    <input type="number" class="inp w-16 text-xs py-1 text-right" value="${g.qty}" oninput="updIng(${i},this.value)">
+                    <span class="text-[10px] text-slate-400 w-8">${g.unit}</span>
+                    <span class="text-xs font-bold w-20 text-right">${(g.price*g.qty).toFixed(2)} TL</span>
+                    <button onclick="removeIng(${i})" class="text-slate-300 hover:text-[#EF4444] text-xs"><i class="fa-solid fa-xmark"></i></button>
+                </div>`).join('');
+            calcRecipe();
+        }
+        function updIng(i,v){ings[i].qty=parseFloat(v)||0;renderIngs();}
+        function addIng(){ings.push({name:'Yeni Malzeme',unit:'Kg',price:0,qty:0});renderIngs();}
+        function removeIng(i){ings.splice(i,1);renderIngs();}
+        function calcRecipe(){
+            const t=ings.reduce((s,g)=>s+g.qty*g.price,0);
+            const m=parseFloat(document.getElementById('multiplier').value)||1;
+            document.getElementById('cost-display').textContent=t.toFixed(2)+' TL';
+            document.getElementById('price-display').textContent=(t*m).toFixed(2)+' TL';
+        }
+
+        function openModal(){document.getElementById('modal').style.display='flex';}
+        function closeModal(){document.getElementById('modal').style.display='none';}
+
+        window.onload = function(){
+            renderIngs();
+            new ApexCharts(document.querySelector('#inflationChart'),{
+                series:[{name:'Artis',data:[0,1.2,2.5,3.1,4.8,6.2,8.5,9.1,11.4,13.2,15.8,18.4]}],
+                chart:{type:'area',height:130,toolbar:{show:false},fontFamily:'Poppins',sparkline:{enabled:false}},
+                colors:['#EF4444'],fill:{type:'gradient',gradient:{opacityFrom:.3,opacityTo:.02}},
+                stroke:{curve:'smooth',width:2},dataLabels:{enabled:false},
+                xaxis:{categories:['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10','H11','H12'],labels:{style:{fontSize:'10px',fontFamily:'Poppins'}}},
+                yaxis:{labels:{formatter:v=>'%'+v,style:{fontSize:'10px',fontFamily:'Poppins'}}},
+                grid:{borderColor:'#f0f3f8'},tooltip:{y:{formatter:v=>'%'+v}}
+            }).render();
+            new ApexCharts(document.querySelector('#salesChart'),{
+                series:[{name:'Ciro',type:'column',data:[22,18,25,20,32,45,38]},{name:'Maliyet',type:'line',data:[7,6,8,6,10,15,12]}],
+                chart:{height:260,type:'line',toolbar:{show:false},fontFamily:'Poppins'},
+                stroke:{width:[0,3],curve:'smooth'},colors:['#10B981','#FF0056'],
+                dataLabels:{enabled:false},xaxis:{categories:['Pzt','Sal','Car','Per','Cum','Cmt','Paz'],labels:{style:{fontFamily:'Poppins',fontSize:'11px'}}},
+                grid:{borderColor:'#f0f3f8'},plotOptions:{bar:{borderRadius:4,columnWidth:'38%'}},
+                legend:{fontFamily:'Poppins',fontSize:'11px'}
+            }).render();
+            new ApexCharts(document.querySelector('#heatmap'),{
+                series:[{name:'Ogle',data:[20,30,25,40,60,80,70]},{name:'Aksam',data:[50,60,55,70,90,100,95]},{name:'Gece',data:[10,15,10,20,50,60,40]}],
+                chart:{height:200,type:'heatmap',toolbar:{show:false},fontFamily:'Poppins'},
+                colors:['#FF0056'],dataLabels:{enabled:false},
+                xaxis:{categories:['Pzt','Sal','Car','Per','Cum','Cmt','Paz'],labels:{style:{fontFamily:'Poppins',fontSize:'11px'}}},
+                plotOptions:{heatmap:{radius:3,colorScale:{ranges:[{from:0,to:40,color:'#fee2e2',name:'Dusuk'},{from:41,to:70,color:'#ef4444',name:'Orta'},{from:71,to:100,color:'#7f1d1d',name:'Yuksek'}]}}}
+            }).render();
+        };
+    </script>
+</body>
+</html>
